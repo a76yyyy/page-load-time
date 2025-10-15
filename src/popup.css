@@ -3,11 +3,17 @@ body {
     font-size: 13px;
     -webkit-font-smoothing: antialiased;
     width: 400px;
+    min-width: 400px;
+    margin: 0;
+    padding: 0 8px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    box-sizing: content-box;
 }
 
 /* 导出按钮样式 */
 .export-button {
-    margin: 10px;
+    margin: 10px 0;
     padding: 8px 16px;
     background: #1976d2;
     color: white;
@@ -30,7 +36,7 @@ body {
 #tabs {
     display: flex;
     border-bottom: 1px solid rgba(0,0,0,.12);
-    margin-bottom: 10px;
+    margin: 0 -8px 10px -8px;
 }
 
 .tab-button {
@@ -75,7 +81,9 @@ body {
 
 /* 资源列表样式 */
 #resources-container {
-    width: 386px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .resources-header {
@@ -88,41 +96,39 @@ body {
 }
 
 .resources-header span {
-    text-align: left;
-    padding: 0 8px;
+    padding: 0 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: right;
 }
 
 .resources-header .resource-name {
     flex: 1;
     min-width: 0;
+    text-align: left;
 }
 
 .resources-header .resource-type {
-    width: auto;
-    max-width: 50px;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resources-header .resource-duration {
-    width: auto;
-    max-width: 50px;
-    text-align: right;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resources-header .resource-size {
-    width: auto;
-    max-width: 50px;
-    text-align: right;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resource-item {
     display: block;
     border-bottom: 1px solid rgba(0,0,0,.12);
     cursor: pointer;
-    background-image: -webkit-gradient(linear, left bottom, left top,
-        color-stop(0, #c3e0ee), color-stop(0, #c3e0ee));
+    background-image: linear-gradient(to top, #c3e0ee, #c3e0ee);
     background-repeat: no-repeat;
 }
 
@@ -132,38 +138,37 @@ body {
 
 .resource-main {
     display: flex;
-    padding: 0px 4px;
+    padding: 4px;
     align-items: center;
 }
 
 .resource-main span {
-    text-align: left;
     padding: 0 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: right;
 }
 
 .resource-main .resource-name {
     flex: 1;
     min-width: 0;
+    text-align: left;
 }
 
 .resource-main .resource-type {
-    width: auto;
-    max-width: 80px;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resource-main .resource-duration {
-    width: auto;
-    max-width: 50px;
-    text-align: right;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resource-main .resource-size {
-    width: auto;
-    max-width: 50px;
-    text-align: right;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .resource-details {
@@ -198,62 +203,93 @@ body {
 }
 
 #container {
-    width: 386px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
-span {
-    display: table-cell;
+.row, #header {
+    display: flex;
+    align-items: center;
+}
+.row span, #header span {
+    display: block;
     color: rgba(0, 0, 0, 0.87);
-    vertical-align: middle;
-    padding: 0 56px 0 0;
     text-align: right;
     height: 30px;
+    line-height: 30px;
+    padding: 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-span:first-child {
-    padding-right: 25px;
-    width: 100px;
+.row span:first-child, #header span:first-child {
+    flex: 1;
+    min-width: 0;
     text-align: left;
     padding-left: 4px;
 }
-span:not(:first-child) {
-    padding-right: 50px;
-    width: 50px;
-}
-span:last-child {
-    padding-right: 0;
+.row span:nth-child(2), #header span:nth-child(2),
+.row span:nth-child(3), #header span:nth-child(3),
+.row span:nth-child(4), #header span:nth-child(4) {
+    width: 70px;
+    flex-shrink: 0;
 }
 .sub {
-    text-indent: 10px;
+    padding-left: 14px !important;
 }
 .row, #header {
     border-bottom: 1px solid rgba(0,0,0,.12);
-    border-width: 0 1px 1px 0;
 }
 #header span {
     color: rgba(43, 33, 33, 0.54);
     font-size: 12px;
     font-weight: 500;
-    text-align: right;
-}
-#header span:first-child {
-    text-align: left;
 }
 .row {
-    background-image: -webkit-gradient(linear, left bottom, left top,
-        color-stop(0, #c3e0ee), color-stop(0, #c3e0ee));
+    background-image: linear-gradient(to top, #c3e0ee, #c3e0ee);
     background-repeat: no-repeat;
 }
 h3 {
     font-size: 16px;
     color: rgba(0,0,0,.54);
-    margin: 0.5em;
-    margin-left: 3px;
+    margin: 0.5em 0;
 }
 #r-total, #r-remote-ip {
     background: none;
     font-weight: 500;
 }
-#r-total span:last-child,
-#r-remote-ip span:last-child {
-    width: 66%;
-    padding-right: 0px;
+#r-total span:nth-child(2),
+#r-remote-ip span:nth-child(2) {
+    flex: 1;
+    width: auto;
+    text-align: right;
+}
+/* r-total 和 r-remote-ip 的第二列占据后三列的空间 */
+#r-total span:nth-child(2),
+#r-remote-ip span:nth-child(2) {
+    width: calc(70px * 3 + 8px);
+    flex: 0 0 auto;
+}
+
+/* 滚动条样式优化 */
+
+/* Webkit 浏览器 (Chrome, Edge, Safari) */
+body::-webkit-scrollbar {
+    width: 12px;
+}
+
+body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+    background-clip: content-box;
 }

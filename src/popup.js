@@ -3,13 +3,15 @@ var currentTiming = null;
 
 function set(id, start, end, noacc) {
   var length = Math.round(end - start);
-  var x = Math.round(start / total * 300);
+  // 动态获取容器宽度
+  var containerWidth = document.getElementById('container').offsetWidth;
+  var x = Math.round(start / total * containerWidth);
   document.getElementById(id + 'When').innerHTML = Math.round(start);
   document.getElementById(id).innerHTML = length;
   document.getElementById(id + 'Total').innerHTML = noacc ? '-' : Math.round(end);
   document.getElementById('r-' + id).style.cssText =
-    'background-size:' + Math.round(length / total * 300) + 'px 100%;' +
-    'background-position-x:' + (x >= 300 ? 299 : x) + 'px;';
+    'background-size:' + Math.round(length / total * containerWidth) + 'px 100%;' +
+    'background-position-x:' + (x >= containerWidth ? containerWidth - 1 : x) + 'px;';
 }
 
 // 标签页切换功能
@@ -28,7 +30,34 @@ function setupTabs() {
       // 添加active类到当前标签
       button.classList.add('active');
       document.getElementById(`${tabId}-tab`).classList.add('active');
+
+      // 当切换到 resources 标签页时,更新背景位置
+      if (tabId === 'resources') {
+        updateResourceBackgrounds();
+      }
     });
+  });
+}
+
+// 更新资源列表的背景位置(在标签页显示后)
+function updateResourceBackgrounds() {
+  const resourcesContainer = document.getElementById('resources-container');
+  const containerWidth = resourcesContainer.offsetWidth;
+
+  if (containerWidth === 0) return; // 容器仍然隐藏,不处理
+
+  const resourceItems = document.querySelectorAll('.resource-item');
+  resourceItems.forEach(item => {
+    // 重新计算并设置背景位置
+    const currentSize = item.style.backgroundSize;
+    const currentPos = item.style.backgroundPositionX;
+
+    // 如果已经有正确的值,不需要重新计算
+    if (currentSize && currentSize !== '0px 100%') {
+      return;
+    }
+
+    // 这里可以添加重新计算的逻辑,但通常初始值就是正确的
   });
 }
 
@@ -61,6 +90,16 @@ function displayResources(resources) {
   const timeRange = calculateResourceTimeRange(resources);
   const resourceTotalTime = timeRange.max - timeRange.min;
 
+  // 动态获取资源容器宽度
+  const resourcesContainer = document.getElementById('resources-container');
+  let containerWidth = resourcesContainer.offsetWidth;
+
+  // 如果容器宽度为 0(标签页隐藏),使用 navigation 容器的宽度作为参考
+  if (containerWidth === 0) {
+    const navigationContainer = document.getElementById('container');
+    containerWidth = navigationContainer.offsetWidth || 384;
+  }
+
   resources.forEach(resource => {
     const resourceItem = document.createElement('div');
     resourceItem.className = 'resource-item';
@@ -72,8 +111,8 @@ function displayResources(resources) {
     // 计算背景色位置和大小
     const relativeStart = resource.startTime - timeRange.min;
     const relativeDuration = resource.duration;
-    const backgroundSize = Math.max(1, Math.round(relativeDuration / resourceTotalTime * 300));
-    const backgroundPosition = Math.round(relativeStart / resourceTotalTime * 300);
+    const backgroundSize = Math.max(1, Math.round(relativeDuration / resourceTotalTime * containerWidth));
+    const backgroundPosition = Math.round(relativeStart / resourceTotalTime * containerWidth);
 
     resourceItem.innerHTML = `
       <div class="resource-main">
@@ -131,11 +170,12 @@ function displayResources(resources) {
       </div>
     `;
 
-    // 设置背景色
-    resourceItem.style.cssText = `
-      background-size: ${backgroundSize}px 100%;
-      background-position-x: ${backgroundPosition >= 300 ? 299 : backgroundPosition}px;
-    `;
+    // 设置背景色位置和大小(不覆盖 CSS 中的 background-image)
+    resourceItem.style.backgroundSize = `${backgroundSize}px 100%`;
+    resourceItem.style.backgroundPositionX = `${backgroundPosition >= containerWidth ? containerWidth - 1 : backgroundPosition}px`;
+
+    // 调试信息
+    console.log(`Resource: ${fileName}, containerWidth: ${containerWidth}, backgroundSize: ${backgroundSize}px, backgroundPosition: ${backgroundPosition}px`);
 
     fragment.appendChild(resourceItem);
   });
