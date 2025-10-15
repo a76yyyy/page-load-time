@@ -53,7 +53,9 @@ function calculateResourceTimeRange(resources) {
 // 显示资源列表
 function displayResources(resources) {
   const resourcesList = document.getElementById('resources-list');
-  resourcesList.innerHTML = '';
+
+  // 使用 DocumentFragment 批量插入,避免多次 reflow
+  const fragment = document.createDocumentFragment();
 
   // 计算资源加载的时间范围
   const timeRange = calculateResourceTimeRange(resources);
@@ -117,6 +119,10 @@ function displayResources(resources) {
           <span class="label">Status:</span>
           <span class="value">${resource.responseStatus || 'unknown'}</span>
         </div>
+        <div class="detail-row">
+          <span class="label">Remote IP:</span>
+          <span class="value">${resource.remoteIPAddress || 'unknown'}</span>
+        </div>
         ${resource.serverTiming && resource.serverTiming.length > 0 ?
         `<div class="detail-row">
           <span class="label">Server Timing:</span>
@@ -131,19 +137,21 @@ function displayResources(resources) {
       background-position-x: ${backgroundPosition >= 300 ? 299 : backgroundPosition}px;
     `;
 
-    // 添加点击事件 - 点击整个资源项展开/折叠
-    const detailsElement = resourceItem.querySelector('.resource-details');
+    fragment.appendChild(resourceItem);
+  });
 
-    resourceItem.addEventListener('click', () => {
+  // 一次性插入所有元素,避免多次 reflow
+  resourcesList.innerHTML = '';
+  resourcesList.appendChild(fragment);
+
+  // 使用事件委托 - 只添加一个监听器
+  resourcesList.addEventListener('click', (e) => {
+    const resourceItem = e.target.closest('.resource-item');
+    if (resourceItem) {
+      const detailsElement = resourceItem.querySelector('.resource-details');
       const isExpanded = detailsElement.style.display !== 'none';
-      if (isExpanded) {
-        detailsElement.style.display = 'none';
-      } else {
-        detailsElement.style.display = 'block';
-      }
-    });
-
-    resourcesList.appendChild(resourceItem);
+      detailsElement.style.display = isExpanded ? 'none' : 'block';
+    }
   });
 }
 
@@ -208,6 +216,13 @@ function init() {
       set('domSubRes', t.domContentLoadedEventEnd, t.domComplete);
       set('load', t.loadEventStart, t.loadEventEnd);
       document.getElementById("total").innerHTML = Math.round(t.duration);
+
+      // 显示主文档的 Remote IP
+      if (t.remoteIPAddress) {
+        document.getElementById("remoteIP").innerHTML = t.remoteIPAddress;
+      } else {
+        document.getElementById("remoteIP").innerHTML = 'unknown';
+      }
 
       // 使用 startTimestamp 显示页面加载开始时间,格式化为本地时区
       const startTime = new Date(t.startTimestamp);

@@ -219,7 +219,7 @@ span:not(:first-child) {
     width: 50px;
 }
 span:last-child {
-    padding-right: 0px;
+    padding-right: 0;
 }
 .sub {
     text-indent: 10px;
@@ -248,10 +248,12 @@ h3 {
     margin: 0.5em;
     margin-left: 3px;
 }
-#r-total {
+#r-total, #r-remote-ip {
     background: none;
     font-weight: 500;
 }
-#total {
-    padding-left: 200px;
+#r-total span:last-child,
+#r-remote-ip span:last-child {
+    width: 66%;
+    padding-right: 0px;
 }
