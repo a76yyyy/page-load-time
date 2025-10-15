@@ -124,6 +124,56 @@ body {
     flex-shrink: 0;
 }
 
+/* 排序功能样式 */
+.sortable {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.sortable:hover {
+    background-color: rgba(0,0,0,.08);
+}
+
+.sort-icon {
+    display: inline-block;
+    margin-left: 0px;
+    font-size: 10px;
+    color: rgba(0,0,0,.38);
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.sortable.asc .sort-icon {
+    font-size: 0;
+}
+
+.sortable.asc .sort-icon::before {
+    content: '↑';
+    color: #1976d2;
+    font-size: 10px;
+}
+
+.sortable.desc .sort-icon {
+    font-size: 0;
+}
+
+.sortable.desc .sort-icon::before {
+    content: '↓';
+    color: #1976d2;
+    font-size: 10px;
+}
+
+.sortable:not(.asc):not(.desc) .sort-icon {
+    color: rgba(0,0,0,.38);
+}
+
 .resource-item {
     display: block;
     border-bottom: 1px solid rgba(0,0,0,.12);

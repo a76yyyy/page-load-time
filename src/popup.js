@@ -1,5 +1,7 @@
 var total = 0;
 var currentTiming = null;
+var currentResources = null; // 存储当前的资源列表
+var sortState = 'none'; // 排序状态: 'none', 'asc', 'desc'
 
 function set(id, start, end, noacc) {
   var length = Math.round(end - start);
@@ -79,15 +81,40 @@ function calculateResourceTimeRange(resources) {
   return { min: minStart, max: maxEnd };
 }
 
+// 排序资源列表
+function sortResources(resources, order) {
+  if (order === 'none') {
+    return resources;
+  }
+
+  const sorted = [...resources].sort((a, b) => {
+    if (order === 'asc') {
+      return a.duration - b.duration;
+    } else {
+      return b.duration - a.duration;
+    }
+  });
+
+  return sorted;
+}
+
 // 显示资源列表
-function displayResources(resources) {
+function displayResources(resources, applySort = true) {
+  // 保存原始资源列表(只在第一次调用时保存)
+  if (!currentResources) {
+    currentResources = resources;
+  }
+
+  // 应用排序
+  const displayList = applySort ? sortResources(currentResources, sortState) : resources;
+
   const resourcesList = document.getElementById('resources-list');
 
   // 使用 DocumentFragment 批量插入,避免多次 reflow
   const fragment = document.createDocumentFragment();
 
-  // 计算资源加载的时间范围
-  const timeRange = calculateResourceTimeRange(resources);
+  // 计算资源加载的时间范围(使用原始列表)
+  const timeRange = calculateResourceTimeRange(currentResources);
   const resourceTotalTime = timeRange.max - timeRange.min;
 
   // 动态获取资源容器宽度
@@ -100,7 +127,7 @@ function displayResources(resources) {
     containerWidth = navigationContainer.offsetWidth || 384;
   }
 
-  resources.forEach(resource => {
+  displayList.forEach(resource => {
     const resourceItem = document.createElement('div');
     resourceItem.className = 'resource-item';
 
@@ -292,6 +319,32 @@ function init() {
   document.getElementById('subResourcesLink').addEventListener('click', () => {
     document.querySelector('.tab-button[data-tab="resources"]').click();
   });
+
+  // 排序按钮点击事件
+  const durationSortButton = document.getElementById('duration-sort');
+  if (durationSortButton) {
+    durationSortButton.addEventListener('click', () => {
+      // 切换排序状态: none -> asc -> desc -> none
+      if (sortState === 'none') {
+        sortState = 'asc';
+      } else if (sortState === 'asc') {
+        sortState = 'desc';
+      } else {
+        sortState = 'none';
+      }
+
+      // 更新按钮样式
+      durationSortButton.classList.remove('asc', 'desc');
+      if (sortState !== 'none') {
+        durationSortButton.classList.add(sortState);
+      }
+
+      // 重新显示资源列表
+      if (currentResources) {
+        displayResources(currentResources);
+      }
+    });
+  }
 }
 
 // 页面加载完成后初始化
