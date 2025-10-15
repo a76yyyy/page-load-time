@@ -11,6 +11,14 @@ body {
     box-sizing: content-box;
 }
 
+/* Firefox 浏览器 - 为滚动条预留空间,防止遮挡内容 */
+/* 使用 @supports 检测火狐特有的属性来识别火狐浏览器 */
+@supports (-moz-appearance: none) {
+    body {
+        padding-right: 20px; /* 为火狐的滚动条预留足够空间 */
+    }
+}
+
 /* 导出按钮样式 */
 .export-button {
     margin: 10px 0;
@@ -406,6 +414,14 @@ h3 {
 }
 
 /* 滚动条样式优化 */
+
+/* Firefox 浏览器 - 使用标准属性 */
+@supports (scrollbar-width: thin) {
+    body {
+        scrollbar-width: thin; /* 使用细滚动条,可选值: auto, thin, none */
+        scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05); /* 滑块颜色 轨道颜色 */
+    }
+}
 
 /* Webkit 浏览器 (Chrome, Edge, Safari) */
 body::-webkit-scrollbar {
