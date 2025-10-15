@@ -1,5 +1,5 @@
 NAME=page-load-time
-VERSION=4.0
+VERSION=4.1
 
 link_manifest_chrome:
 	cp ./src/manifest.chrome.json ./src/manifest.json
