@@ -10,7 +10,7 @@
     ]
   },
   "action": {
-    "default_icon": "stopwatch22.png",
+    "default_icon": "stopwatch.svg",
     "default_popup": "popup.html"
   },
   "content_scripts": [
@@ -34,9 +34,9 @@
     "<all_urls>"
   ],
   "icons": {
-    "16": "stopwatch16.png",
-    "48": "stopwatch48.png",
-    "128": "stopwatch128.png"
+    "16": "stopwatch.svg",
+    "48": "stopwatch.svg",
+    "128": "stopwatch.svg"
   },
   "browser_specific_settings": {
     "gecko": {

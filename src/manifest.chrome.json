@@ -7,7 +7,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_icon": "stopwatch22.png",
+    "default_icon": "stopwatch.png",
     "default_popup": "popup.html"
   },
   "content_scripts": [
@@ -31,8 +31,8 @@
     "<all_urls>"
   ],
   "icons": {
-    "16": "stopwatch16.png",
-    "48": "stopwatch48.png",
-    "128": "stopwatch128.png"
+    "16": "stopwatch.png",
+    "48": "stopwatch.png",
+    "128": "stopwatch.png"
   }
 }
