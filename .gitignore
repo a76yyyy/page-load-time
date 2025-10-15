@@ -3,3 +3,4 @@
 src/manifest.json
 build
 *.pem
+.DS_Store
