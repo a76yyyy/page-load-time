@@ -4,15 +4,26 @@
   "manifest_version": 3,
   "description": "Displays page load time in the toolbar",
   "background": {
-    "scripts": ["browser-polyfill.min.js", "background.js"]
+    "scripts": [
+      "browser-polyfill.min.js",
+      "background.js"
+    ]
   },
   "action": {
-    "default_icon": "stopwatch22.png"
+    "default_icon": "stopwatch22.png",
+    "default_popup": "popup.html"
   },
-  "content_scripts": [{
-    "matches": ["*://*/*"],
-    "js": ["browser-polyfill.min.js", "performance.js"]
-  }],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/*"
+      ],
+      "js": [
+        "browser-polyfill.min.js",
+        "performance.js"
+      ]
+    }
+  ],
   "permissions": [
     "activeTab",
     "storage"
