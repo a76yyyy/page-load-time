@@ -126,6 +126,115 @@ function sortResources(resources, sortState) {
   return sorted;
 }
 
+// 创建单个资源项的 DOM 元素
+function createResourceElement(resource, timeRange, resourceTotalTime, containerWidth) {
+  const resourceItem = document.createElement('div');
+  resourceItem.className = 'resource-item';
+
+  // 存储资源数据,用于排序时识别
+  resourceItem.dataset.resourceName = resource.name;
+
+  const fileName = resource.name.split('/').pop() || resource.name;
+  const size = resource.transferSize > 0 ?
+    (resource.transferSize / 1024).toFixed(1) + ' KB' : 'cached';
+
+  // 计算背景色位置和大小
+  const relativeStart = resource.startTime - timeRange.min;
+  const relativeDuration = resource.duration;
+  const backgroundSize = Math.max(1, Math.round(relativeDuration / resourceTotalTime * containerWidth));
+  const backgroundPosition = Math.round(relativeStart / resourceTotalTime * containerWidth);
+
+  resourceItem.innerHTML = `
+    <div class="resource-main">
+      <span class="resource-name" title="${resource.name}">${fileName}</span>
+      <span class="resource-type">${resource.initiatorType || 'unknown'}</span>
+      <span class="resource-duration">${Math.round(resource.duration)}ms</span>
+      <span class="resource-size">${size}</span>
+    </div>
+    <div class="resource-details" style="display: none;">
+      <div class="detail-row">
+        <span class="label">URL:</span>
+        <span class="value url">${resource.name}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Type:</span>
+        <span class="value">${resource.initiatorType || 'unknown'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Duration:</span>
+        <span class="value">${Math.round(resource.duration)}ms</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Start Time:</span>
+        <span class="value">${Math.round(resource.startTime)}ms</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Transfer Size:</span>
+        <span class="value">${resource.transferSize > 0 ? resource.transferSize + ' bytes' : 'cached'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Encoded Size:</span>
+        <span class="value">${resource.encodedBodySize} bytes</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Decoded Size:</span>
+        <span class="value">${resource.decodedBodySize} bytes</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Protocol:</span>
+        <span class="value">${resource.nextHopProtocol || 'unknown'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Status:</span>
+        <span class="value">${resource.responseStatus || 'unknown'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Remote IP:</span>
+        <span class="value">${resource.remoteIPAddress || 'unknown'}</span>
+      </div>
+      ${resource.serverTiming && resource.serverTiming.length > 0 ?
+      `<div class="detail-row">
+        <span class="label">Server Timing:</span>
+        <span class="value">${JSON.stringify(resource.serverTiming)}</span>
+      </div>` : ''}
+    </div>
+  `;
+
+  // 设置背景色位置和大小(不覆盖 CSS 中的 background-image)
+  resourceItem.style.backgroundSize = `${backgroundSize}px 100%`;
+  resourceItem.style.backgroundPositionX = `${backgroundPosition >= containerWidth ? containerWidth - 1 : backgroundPosition}px`;
+
+  return resourceItem;
+}
+
+// 重新排序现有的 DOM 元素(不重新创建)
+function reorderResourceElements(sortedResources) {
+  const resourcesList = document.getElementById('resources-list');
+  const existingElements = Array.from(resourcesList.children);
+
+  // 创建一个映射,从资源名称到 DOM 元素
+  const elementMap = new Map();
+  existingElements.forEach(element => {
+    const resourceName = element.dataset.resourceName;
+    if (resourceName) {
+      elementMap.set(resourceName, element);
+    }
+  });
+
+  // 使用 DocumentFragment 批量重新排序
+  const fragment = document.createDocumentFragment();
+  sortedResources.forEach(resource => {
+    const element = elementMap.get(resource.name);
+    if (element) {
+      fragment.appendChild(element);
+    }
+  });
+
+  // 一次性更新 DOM
+  resourcesList.innerHTML = '';
+  resourcesList.appendChild(fragment);
+}
+
 // 显示资源列表
 function displayResources(resources, applySort = true) {
   // 保存原始资源列表(只在第一次调用时保存)
@@ -133,10 +242,17 @@ function displayResources(resources, applySort = true) {
     currentResources = resources;
   }
 
-  // 应用排序
-  const displayList = applySort ? sortResources(currentResources, sortState) : resources;
-
   const resourcesList = document.getElementById('resources-list');
+
+  // 如果是排序操作且 DOM 已经存在,只重新排序,不重新创建
+  if (applySort && resourcesList.children.length > 0) {
+    const sortedResources = sortResources(currentResources, sortState);
+    reorderResourceElements(sortedResources);
+    return;
+  }
+
+  // 首次渲染:创建所有 DOM 元素
+  const displayList = applySort ? sortResources(currentResources, sortState) : resources;
 
   // 使用 DocumentFragment 批量插入,避免多次 reflow
   const fragment = document.createDocumentFragment();
@@ -156,98 +272,13 @@ function displayResources(resources, applySort = true) {
   }
 
   displayList.forEach(resource => {
-    const resourceItem = document.createElement('div');
-    resourceItem.className = 'resource-item';
-
-    const fileName = resource.name.split('/').pop() || resource.name;
-    const size = resource.transferSize > 0 ?
-      (resource.transferSize / 1024).toFixed(1) + ' KB' : 'cached';
-
-    // 计算背景色位置和大小
-    const relativeStart = resource.startTime - timeRange.min;
-    const relativeDuration = resource.duration;
-    const backgroundSize = Math.max(1, Math.round(relativeDuration / resourceTotalTime * containerWidth));
-    const backgroundPosition = Math.round(relativeStart / resourceTotalTime * containerWidth);
-
-    resourceItem.innerHTML = `
-      <div class="resource-main">
-        <span class="resource-name" title="${resource.name}">${fileName}</span>
-        <span class="resource-type">${resource.initiatorType || 'unknown'}</span>
-        <span class="resource-duration">${Math.round(resource.duration)}ms</span>
-        <span class="resource-size">${size}</span>
-      </div>
-      <div class="resource-details" style="display: none;">
-        <div class="detail-row">
-          <span class="label">URL:</span>
-          <span class="value url">${resource.name}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Type:</span>
-          <span class="value">${resource.initiatorType || 'unknown'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Duration:</span>
-          <span class="value">${Math.round(resource.duration)}ms</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Start Time:</span>
-          <span class="value">${Math.round(resource.startTime)}ms</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Transfer Size:</span>
-          <span class="value">${resource.transferSize > 0 ? resource.transferSize + ' bytes' : 'cached'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Encoded Size:</span>
-          <span class="value">${resource.encodedBodySize} bytes</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Decoded Size:</span>
-          <span class="value">${resource.decodedBodySize} bytes</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Protocol:</span>
-          <span class="value">${resource.nextHopProtocol || 'unknown'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Status:</span>
-          <span class="value">${resource.responseStatus || 'unknown'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">Remote IP:</span>
-          <span class="value">${resource.remoteIPAddress || 'unknown'}</span>
-        </div>
-        ${resource.serverTiming && resource.serverTiming.length > 0 ?
-        `<div class="detail-row">
-          <span class="label">Server Timing:</span>
-          <span class="value">${JSON.stringify(resource.serverTiming)}</span>
-        </div>` : ''}
-      </div>
-    `;
-
-    // 设置背景色位置和大小(不覆盖 CSS 中的 background-image)
-    resourceItem.style.backgroundSize = `${backgroundSize}px 100%`;
-    resourceItem.style.backgroundPositionX = `${backgroundPosition >= containerWidth ? containerWidth - 1 : backgroundPosition}px`;
-
-    // 调试信息
-    console.log(`Resource: ${fileName}, containerWidth: ${containerWidth}, backgroundSize: ${backgroundSize}px, backgroundPosition: ${backgroundPosition}px`);
-
+    const resourceItem = createResourceElement(resource, timeRange, resourceTotalTime, containerWidth);
     fragment.appendChild(resourceItem);
   });
 
   // 一次性插入所有元素,避免多次 reflow
   resourcesList.innerHTML = '';
   resourcesList.appendChild(fragment);
-
-  // 使用事件委托 - 只添加一个监听器
-  resourcesList.addEventListener('click', (e) => {
-    const resourceItem = e.target.closest('.resource-item');
-    if (resourceItem) {
-      const detailsElement = resourceItem.querySelector('.resource-details');
-      const isExpanded = detailsElement.style.display !== 'none';
-      detailsElement.style.display = isExpanded ? 'none' : 'block';
-    }
-  });
 }
 
 // 导出数据
@@ -347,6 +378,21 @@ function init() {
   document.getElementById('subResourcesLink').addEventListener('click', () => {
     document.querySelector('.tab-button[data-tab="resources"]').click();
   });
+
+  // 资源列表点击事件 - 使用事件委托,只绑定一次
+  const resourcesList = document.getElementById('resources-list');
+  if (resourcesList) {
+    resourcesList.addEventListener('click', (e) => {
+      const resourceItem = e.target.closest('.resource-item');
+      if (resourceItem) {
+        const detailsElement = resourceItem.querySelector('.resource-details');
+        if (detailsElement) {
+          const isExpanded = detailsElement.style.display !== 'none';
+          detailsElement.style.display = isExpanded ? 'none' : 'block';
+        }
+      }
+    });
+  }
 
   // 排序按钮点击事件
   const durationSortButton = document.getElementById('duration-sort');
