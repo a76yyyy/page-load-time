@@ -7,26 +7,57 @@
     window.addEventListener('load', startCollect);
   }
 
-  function startCollect() {
+  async function startCollect() {
     const navigationEntry = performance.getEntriesByType('navigation')[0];
     const resourceEntries = performance.getEntriesByType('resource');
 
     // 使用PerformanceNavigationTiming数据
     const timing = navigationEntry.toJSON();
 
-    timing.resources = resourceEntries.map(entry => ({
-      name: entry.name,
-      entryType: entry.entryType,
-      startTime: entry.startTime,
-      duration: entry.duration,
-      initiatorType: entry.initiatorType,
-      nextHopProtocol: entry.nextHopProtocol,
-      transferSize: entry.transferSize,
-      encodedBodySize: entry.encodedBodySize,
-      decodedBodySize: entry.decodedBodySize,
-      responseStatus: entry.responseStatus,
-      serverTiming: entry.serverTiming
-    }));
+    // 一次性获取所有 IP 数据
+    let ipCache = {};
+    try {
+      ipCache = await browser.runtime.sendMessage({ action: 'getIPData' });
+      console.log('[DEBUG] 📥 收到 IP 缓存:', Object.keys(ipCache).length, '条记录', ipCache);
+    } catch (e) {
+      console.log('Failed to get IP cache:', e);
+    }
+
+    // 为主文档设置 IP 地址
+    const mainDocIP = ipCache[timing.name];
+    if (mainDocIP && mainDocIP.ip) {
+      timing.remoteIPAddress = mainDocIP.ip;
+    }
+
+    // 为每个资源设置 IP 地址
+    const resourcesWithIP = resourceEntries.map(entry => {
+      const ipData = ipCache[entry.name];
+      const remoteIPAddress = (ipData && ipData.ip) ? ipData.ip : 'unknown';
+
+      return {
+        name: entry.name,
+        entryType: entry.entryType,
+        startTime: entry.startTime,
+        duration: entry.duration,
+        initiatorType: entry.initiatorType,
+        nextHopProtocol: entry.nextHopProtocol,
+        transferSize: entry.transferSize,
+        encodedBodySize: entry.encodedBodySize,
+        decodedBodySize: entry.decodedBodySize,
+        responseStatus: entry.responseStatus,
+        serverTiming: entry.serverTiming,
+        remoteIPAddress: remoteIPAddress
+      };
+    });
+
+    timing.resources = resourcesWithIP;
+
+    // 数据收集完成后,停止监听该 tab 的请求
+    try {
+      await browser.runtime.sendMessage({ action: 'stopListening' });
+    } catch (e) {
+      console.log('Failed to stop listening:', e);
+    }
 
     // 设置开始时间
     timing.start = timing.fetchStart;

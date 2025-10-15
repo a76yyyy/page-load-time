@@ -23,7 +23,12 @@
   ],
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "webRequest",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "icons": {
     "16": "stopwatch16.png",

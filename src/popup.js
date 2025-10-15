@@ -184,13 +184,14 @@ function init() {
 
   browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
     var tab = tabs[0];
-    browser.storage.local.get('cache').then(data => {
-      if (!data.cache || !data.cache['tab' + tab.id]) {
+    const cacheKey = 'cache_tab' + tab.id;
+    browser.storage.local.get(cacheKey).then(data => {
+      if (!data[cacheKey]) {
         document.getElementById('container').innerHTML = '<p>No timing data available for this page.</p>';
         return;
       }
 
-      var t = data.cache['tab' + tab.id];
+      var t = data[cacheKey];
       currentTiming = t;
       total = t.duration;
 
