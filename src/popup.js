@@ -5,6 +5,9 @@ var sortState = {
   column: 'none', // 'none', 'duration', 'size'
   order: 'none'   // 'none', 'asc', 'desc'
 };
+var filterState = {
+  types: ['all'] // 'all' 或具体的资源类型数组
+};
 
 function set(id, start, end, noacc) {
   var length = Math.round(end - start);
@@ -84,6 +87,19 @@ function calculateResourceTimeRange(resources) {
   return { min: minStart, max: maxEnd };
 }
 
+// 筛选资源列表
+function filterResources(resources, filterState) {
+  // 如果选择了 "All Types" 或没有选择任何类型,显示所有资源
+  if (filterState.types.includes('all') || filterState.types.length === 0) {
+    return resources;
+  }
+
+  return resources.filter(resource => {
+    const resourceType = resource.initiatorType || 'unknown';
+    return filterState.types.includes(resourceType);
+  });
+}
+
 // 排序资源列表
 function sortResources(resources, sortState) {
   if (sortState.order === 'none' || sortState.column === 'none') {
@@ -124,6 +140,49 @@ function sortResources(resources, sortState) {
   });
 
   return sorted;
+}
+
+// 获取所有资源类型
+function getResourceTypes(resources) {
+  const types = new Set();
+  resources.forEach(resource => {
+    const type = resource.initiatorType || 'unknown';
+    types.add(type);
+  });
+  return Array.from(types).sort();
+}
+
+// 初始化类型筛选器
+function initTypeFilter(resources) {
+  const typeFilter = document.getElementById('type-filter');
+  if (!typeFilter) return;
+
+  const types = getResourceTypes(resources);
+
+  // 清空现有选项(保留 "All Types")
+  typeFilter.innerHTML = `
+    <label class="filter-option">
+      <input type="checkbox" value="all" checked>
+      <span>All Types</span>
+    </label>
+  `;
+
+  // 添加所有类型选项
+  types.forEach(type => {
+    const label = document.createElement('label');
+    label.className = 'filter-option';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = type;
+
+    const span = document.createElement('span');
+    span.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    typeFilter.appendChild(label);
+  });
 }
 
 // 创建单个资源项的 DOM 元素
@@ -207,8 +266,8 @@ function createResourceElement(resource, timeRange, resourceTotalTime, container
   return resourceItem;
 }
 
-// 重新排序现有的 DOM 元素(不重新创建)
-function reorderResourceElements(sortedResources) {
+// 重新排序和筛选现有的 DOM 元素(不重新创建)
+function reorderResourceElements(sortedResources, filteredResources) {
   const resourcesList = document.getElementById('resources-list');
   const existingElements = Array.from(resourcesList.children);
 
@@ -221,22 +280,40 @@ function reorderResourceElements(sortedResources) {
     }
   });
 
+  // 创建筛选后的资源名称集合,用于快速查找
+  const filteredResourceNames = new Set(filteredResources.map(r => r.name));
+
   // 使用 DocumentFragment 批量重新排序
   const fragment = document.createDocumentFragment();
   sortedResources.forEach(resource => {
     const element = elementMap.get(resource.name);
     if (element) {
-      fragment.appendChild(element);
+      // 根据筛选状态显示或隐藏元素
+      if (filteredResourceNames.has(resource.name)) {
+        element.style.display = '';
+        fragment.appendChild(element);
+      } else {
+        element.style.display = 'none';
+      }
     }
   });
 
   // 一次性更新 DOM
   resourcesList.innerHTML = '';
   resourcesList.appendChild(fragment);
+
+  // 将隐藏的元素也添加回去,保持 DOM 完整性
+  existingElements.forEach(element => {
+    const resourceName = element.dataset.resourceName;
+    if (resourceName && !filteredResourceNames.has(resourceName)) {
+      element.style.display = 'none';
+      resourcesList.appendChild(element);
+    }
+  });
 }
 
 // 显示资源列表
-function displayResources(resources, applySort = true) {
+function displayResources(resources, applySort = true, applyFilter = true) {
   // 保存原始资源列表(只在第一次调用时保存)
   if (!currentResources) {
     currentResources = resources;
@@ -244,15 +321,22 @@ function displayResources(resources, applySort = true) {
 
   const resourcesList = document.getElementById('resources-list');
 
-  // 如果是排序操作且 DOM 已经存在,只重新排序,不重新创建
-  if (applySort && resourcesList.children.length > 0) {
-    const sortedResources = sortResources(currentResources, sortState);
-    reorderResourceElements(sortedResources);
+  // 如果是排序/筛选操作且 DOM 已经存在,只重新排序和筛选,不重新创建
+  if (resourcesList.children.length > 0) {
+    const filteredResources = applyFilter ? filterResources(currentResources, filterState) : currentResources;
+    const sortedResources = applySort ? sortResources(filteredResources, sortState) : filteredResources;
+    reorderResourceElements(sortedResources, filteredResources);
     return;
   }
 
   // 首次渲染:创建所有 DOM 元素
-  const displayList = applySort ? sortResources(currentResources, sortState) : resources;
+  let displayList = currentResources;
+  if (applyFilter) {
+    displayList = filterResources(displayList, filterState);
+  }
+  if (applySort) {
+    displayList = sortResources(displayList, sortState);
+  }
 
   // 使用 DocumentFragment 批量插入,避免多次 reflow
   const fragment = document.createDocumentFragment();
@@ -365,6 +449,8 @@ function init() {
 
       // 显示资源列表
       if (t.resources && t.resources.length > 0) {
+        // 初始化类型筛选器
+        initTypeFilter(t.resources);
         displayResources(t.resources);
       }
     });
@@ -390,6 +476,130 @@ function init() {
           const isExpanded = detailsElement.style.display !== 'none';
           detailsElement.style.display = isExpanded ? 'none' : 'block';
         }
+      }
+    });
+  }
+
+  // 类型筛选器事件
+  const typeFilter = document.getElementById('type-filter');
+  const typeFilterTrigger = document.getElementById('type-filter-trigger');
+
+  // 调整容器高度以适应下拉框
+  function adjustContainerHeight() {
+    // 使用 setTimeout 确保 DOM 更新完成后再计算高度
+    setTimeout(() => {
+      const dropdownHeight = typeFilter.offsetHeight; // 使用可视高度,而不是完整高度
+      const triggerRect = typeFilterTrigger.getBoundingClientRect();
+      const resourcesList = document.getElementById('resources-list');
+
+      if (resourcesList) {
+        const listRect = resourcesList.getBoundingClientRect();
+        const currentListHeight = listRect.height;
+        const neededHeight = triggerRect.bottom - listRect.top + dropdownHeight + 10;
+
+        // 取 max(下拉框需要的高度, 当前列表高度)
+        resourcesList.style.minHeight = Math.max(neededHeight, currentListHeight) + 'px';
+      }
+    }, 0);
+  }
+
+  // 恢复容器高度
+  function resetContainerHeight() {
+    const resourcesList = document.getElementById('resources-list');
+    if (resourcesList) {
+      resourcesList.style.minHeight = '';
+    }
+  }
+
+  // 点击 Type 列标题时显示/隐藏下拉菜单
+  if (typeFilterTrigger && typeFilter) {
+    typeFilterTrigger.addEventListener('click', (e) => {
+      // 如果点击的是 typeFilter 内部,不处理
+      if (typeFilter.contains(e.target)) return;
+
+      e.stopPropagation();
+
+      // 切换下拉菜单显示状态
+      if (typeFilter.style.display === 'none' || typeFilter.style.display === '') {
+        typeFilter.style.display = 'block';
+        adjustContainerHeight();
+      } else {
+        typeFilter.style.display = 'none';
+        resetContainerHeight();
+      }
+    });
+
+    // 复选框变化时更新筛选状态
+    typeFilter.addEventListener('change', (e) => {
+      if (e.target.type !== 'checkbox') return;
+
+      const checkboxes = typeFilter.querySelectorAll('input[type="checkbox"]');
+      const allCheckbox = typeFilter.querySelector('input[value="all"]');
+      const checkedValues = Array.from(checkboxes)
+        .filter(cb => cb.checked && cb.value !== 'all')
+        .map(cb => cb.value);
+
+      // 处理 "All Types" 的逻辑
+      if (e.target.value === 'all') {
+        if (e.target.checked) {
+          // 选中 "All Types",取消其他所有选项
+          checkboxes.forEach(cb => {
+            if (cb.value !== 'all') {
+              cb.checked = false;
+            }
+          });
+          filterState.types = ['all'];
+        } else {
+          // 不允许取消 "All Types" 如果没有其他选项被选中
+          if (checkedValues.length === 0) {
+            e.target.checked = true;
+            return;
+          }
+        }
+      } else {
+        // 选中具体类型
+        if (e.target.checked) {
+          // 取消 "All Types"
+          if (allCheckbox) {
+            allCheckbox.checked = false;
+          }
+          filterState.types = checkedValues;
+        } else {
+          // 如果取消后没有任何选项,自动选中 "All Types"
+          if (checkedValues.length === 0) {
+            if (allCheckbox) {
+              allCheckbox.checked = true;
+            }
+            filterState.types = ['all'];
+          } else {
+            filterState.types = checkedValues;
+          }
+        }
+      }
+
+      // 更新筛选器激活状态
+      if (typeFilterTrigger) {
+        if (filterState.types.includes('all')) {
+          typeFilterTrigger.classList.remove('active');
+        } else {
+          typeFilterTrigger.classList.add('active');
+        }
+      }
+
+      // 重新调整容器高度(因为下拉框高度可能变化)
+      adjustContainerHeight();
+
+      // 重新显示资源列表
+      if (currentResources) {
+        displayResources(currentResources);
+      }
+    });
+
+    // 点击页面其他地方时隐藏下拉菜单
+    document.addEventListener('click', (e) => {
+      if (!typeFilterTrigger.contains(e.target)) {
+        typeFilter.style.display = 'none';
+        resetContainerHeight();
       }
     });
   }

@@ -110,7 +110,15 @@
         <div id="resources-container">
             <div class="resources-header">
                 <span class="resource-name">Resource</span>
-                <span class="resource-type">Type</span>
+                <span class="resource-type filterable" id="type-filter-trigger">Type<span class="filter-icon">▼</span>
+                    <div id="type-filter" class="type-filter-dropdown" role="group"
+                        aria-label="Filter resources by type">
+                        <label class="filter-option">
+                            <input type="checkbox" value="all" checked>
+                            <span>All Types</span>
+                        </label>
+                    </div>
+                </span>
                 <span class="resource-duration sortable" id="duration-sort">Duration<span
                         class="sort-icon">⇅</span></span>
                 <span class="resource-size sortable" id="size-sort">Size<span class="sort-icon">⇅</span></span>

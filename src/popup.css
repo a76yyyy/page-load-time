@@ -7,7 +7,7 @@ body {
     margin: 0;
     padding: 0 8px;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     box-sizing: content-box;
 }
 
@@ -66,6 +66,7 @@ body {
 
 .tab-content.active {
     display: block;
+    overflow-y: visible;
 }
 
 /* 可点击元素样式 */
@@ -84,6 +85,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .resources-header {
@@ -168,6 +170,88 @@ body {
     content: '↓';
     color: #1976d2;
     font-size: 10px;
+}
+
+/* 筛选功能样式 */
+.filterable {
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.filterable:hover {
+    background-color: rgba(0,0,0,.08);
+}
+
+.filter-icon {
+    display: inline-block;
+    margin-left: 2px;
+    font-size: 8px;
+    color: rgba(0,0,0,.38);
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.type-filter-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    padding: 4px 0;
+    border: 1px solid rgba(0, 0, 0, 0.23);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: Roboto, sans-serif;
+    background: white;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 120px;
+    max-height: calc(7 * 32px + 8px); /* 7个选项的高度 + padding */
+    overflow-y: auto;
+}
+
+.filter-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.filter-option:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.filter-option input[type="checkbox"] {
+    margin: 0 8px 0 0;
+    cursor: pointer;
+}
+
+.filter-option span {
+    flex: 1;
+}
+
+.type-filter-dropdown:hover {
+    border-color: rgba(0, 0, 0, 0.87);
+}
+
+.type-filter-dropdown:focus {
+    border-color: #1976d2;
+}
+
+/* 当筛选器激活时,图标变色 */
+.filterable.active .filter-icon {
+    color: #1976d2;
 }
 
 .sortable:not(.asc):not(.desc) .sort-icon {
