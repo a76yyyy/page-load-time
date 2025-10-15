@@ -147,6 +147,37 @@ function displayResources(resources) {
   });
 }
 
+// 导出数据
+function exportData() {
+  if (!currentTiming) return;
+
+  // 从 URL 中提取域名
+  let domain = 'unknown';
+  try {
+    const urlObj = new URL(currentTiming.name);
+    domain = urlObj.hostname.replace(/\./g, '_'); // 将点替换为下划线,避免文件名问题
+  } catch (e) {
+    console.error('Failed to parse URL:', e);
+  }
+
+  const data = {
+    timestamp: new Date(currentTiming.startTimestamp).toISOString(),
+    url: currentTiming.name,
+    navigationTiming: currentTiming,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `page-timing-${domain}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // 初始化
 function init() {
   setupTabs();
@@ -196,7 +227,11 @@ function init() {
       }
     });
   });
-
+  // 绑定导出按钮事件
+  const exportButton = document.getElementById('export-button');
+  if (exportButton) {
+    exportButton.addEventListener('click', exportData);
+  }
   // Sub Resources 点击事件
   document.getElementById('subResourcesLink').addEventListener('click', () => {
     document.querySelector('.tab-button[data-tab="resources"]').click();

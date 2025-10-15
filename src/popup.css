@@ -5,6 +5,27 @@ body {
     width: 400px;
 }
 
+/* 导出按钮样式 */
+.export-button {
+    margin: 10px;
+    padding: 8px 16px;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: Roboto, sans-serif;
+}
+
+.export-button:hover {
+    background: #1565c0;
+}
+
+.export-button:active {
+    background: #0d47a1;
+}
+
 /* 标签页样式 */
 #tabs {
     display: flex;
