@@ -31,6 +31,9 @@
     // 设置开始时间
     timing.start = timing.fetchStart;
 
+    // 记录页面加载开始的绝对时间戳(毫秒)
+    timing.startTimestamp = performance.timeOrigin + timing.fetchStart;
+
     if (timing.duration > 0) {
       // fetchStart sometimes negative in FF, make an adjustment based on fetchStart
       var adjustment = timing.fetchStart < 0 ? -timing.fetchStart : 0;

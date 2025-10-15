@@ -176,7 +176,19 @@ function init() {
       set('domSubRes', t.domContentLoadedEventEnd, t.domComplete);
       set('load', t.loadEventStart, t.loadEventEnd);
       document.getElementById("total").innerHTML = Math.round(t.duration);
-      document.getElementById("requestStart").innerHTML = new Date(t.start).toString();
+
+      // 使用 startTimestamp 显示页面加载开始时间,格式化为本地时区
+      const startTime = new Date(t.startTimestamp);
+      const formattedTime = startTime.toLocaleString(undefined, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      });
+      document.getElementById("requestStart").innerHTML = formattedTime;
 
       // 显示资源列表
       if (t.resources && t.resources.length > 0) {
