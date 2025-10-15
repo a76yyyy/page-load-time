@@ -1,7 +1,10 @@
 var total = 0;
 var currentTiming = null;
 var currentResources = null; // 存储当前的资源列表
-var sortState = 'none'; // 排序状态: 'none', 'asc', 'desc'
+var sortState = {
+  column: 'none', // 'none', 'duration', 'size'
+  order: 'none'   // 'none', 'asc', 'desc'
+};
 
 function set(id, start, end, noacc) {
   var length = Math.round(end - start);
@@ -82,16 +85,41 @@ function calculateResourceTimeRange(resources) {
 }
 
 // 排序资源列表
-function sortResources(resources, order) {
-  if (order === 'none') {
+function sortResources(resources, sortState) {
+  if (sortState.order === 'none' || sortState.column === 'none') {
     return resources;
   }
 
   const sorted = [...resources].sort((a, b) => {
-    if (order === 'asc') {
-      return a.duration - b.duration;
+    let valueA, valueB;
+
+    if (sortState.column === 'duration') {
+      valueA = a.duration;
+      valueB = b.duration;
+    } else if (sortState.column === 'size') {
+      // 处理 cached 资源: transferSize 为 0 表示 cached
+      // cached 资源在排序时始终排在最后
+      const isCachedA = a.transferSize === 0;
+      const isCachedB = b.transferSize === 0;
+
+      if (isCachedA && !isCachedB) {
+        return 1; // A 是 cached,排在后面
+      }
+      if (!isCachedA && isCachedB) {
+        return -1; // B 是 cached,排在后面
+      }
+      if (isCachedA && isCachedB) {
+        return 0; // 都是 cached,保持原顺序
+      }
+
+      valueA = a.transferSize;
+      valueB = b.transferSize;
+    }
+
+    if (sortState.order === 'asc') {
+      return valueA - valueB;
     } else {
-      return b.duration - a.duration;
+      return valueB - valueA;
     }
   });
 
@@ -322,21 +350,65 @@ function init() {
 
   // 排序按钮点击事件
   const durationSortButton = document.getElementById('duration-sort');
+  const sizeSortButton = document.getElementById('size-sort');
+
   if (durationSortButton) {
     durationSortButton.addEventListener('click', () => {
-      // 切换排序状态: none -> asc -> desc -> none
-      if (sortState === 'none') {
-        sortState = 'asc';
-      } else if (sortState === 'asc') {
-        sortState = 'desc';
+      // 如果当前是 duration 列排序,切换排序顺序
+      if (sortState.column === 'duration') {
+        if (sortState.order === 'asc') {
+          sortState.order = 'desc';
+        } else if (sortState.order === 'desc') {
+          sortState.column = 'none';
+          sortState.order = 'none';
+        }
       } else {
-        sortState = 'none';
+        // 切换到 duration 列,默认升序
+        sortState.column = 'duration';
+        sortState.order = 'asc';
       }
 
       // 更新按钮样式
       durationSortButton.classList.remove('asc', 'desc');
-      if (sortState !== 'none') {
-        durationSortButton.classList.add(sortState);
+      if (sizeSortButton) {
+        sizeSortButton.classList.remove('asc', 'desc');
+      }
+
+      if (sortState.column === 'duration' && sortState.order !== 'none') {
+        durationSortButton.classList.add(sortState.order);
+      }
+
+      // 重新显示资源列表
+      if (currentResources) {
+        displayResources(currentResources);
+      }
+    });
+  }
+
+  if (sizeSortButton) {
+    sizeSortButton.addEventListener('click', () => {
+      // 如果当前是 size 列排序,切换排序顺序
+      if (sortState.column === 'size') {
+        if (sortState.order === 'asc') {
+          sortState.order = 'desc';
+        } else if (sortState.order === 'desc') {
+          sortState.column = 'none';
+          sortState.order = 'none';
+        }
+      } else {
+        // 切换到 size 列,默认升序
+        sortState.column = 'size';
+        sortState.order = 'asc';
+      }
+
+      // 更新按钮样式
+      if (durationSortButton) {
+        durationSortButton.classList.remove('asc', 'desc');
+      }
+      sizeSortButton.classList.remove('asc', 'desc');
+
+      if (sortState.column === 'size' && sortState.order !== 'none') {
+        sizeSortButton.classList.add(sortState.order);
       }
 
       // 重新显示资源列表
