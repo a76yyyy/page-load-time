@@ -1,8 +1,12 @@
-try { importScripts('browser-polyfill.min.js'); } catch (e) {
-  console.error('[Background] ❌ 加载 browser-polyfill 失败:', e);
-}
-try { importScripts('storage-manager.js'); } catch (e) {
-  console.error('[Background] ❌ 加载 storage-manager 失败:', e);
+// 环境检测:只在 Service Worker 环境中使用 importScripts (Chrome)
+// Firefox 会通过 manifest.json 的 scripts 数组自动加载这些文件
+if (typeof importScripts === 'function') {
+  try { importScripts('browser-polyfill.min.js'); } catch (e) {
+    console.error('[Background] ❌ 加载 browser-polyfill 失败:', e);
+  }
+  try { importScripts('storage-manager.js'); } catch (e) {
+    console.error('[Background] ❌ 加载 storage-manager 失败:', e);
+  }
 }
 
 // 存储每个 tab 的监听器引用
