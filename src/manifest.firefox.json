@@ -6,6 +6,7 @@
   "background": {
     "scripts": [
       "browser-polyfill.min.js",
+      "storage-manager.js",
       "background.js"
     ]
   },

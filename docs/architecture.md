@@ -42,7 +42,6 @@ Service Worker,负责:
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
   if (details.frameId !== 0) return; // 只处理主框架
 
-  ipCacheMemory.set('tab' + details.tabId, {});
   startListeningForTab(details.tabId);
 });
 ```
@@ -53,29 +52,30 @@ browser.webNavigation.onBeforeNavigate.addListener((details) => {
 - ✅ 覆盖所有场景(刷新、前进/后退、新标签页)
 - ✅ 100% 捕获主文档 IP
 
-### 2. 竞态条件解决: 内存缓存 + 独立 Storage Key
+### 2. 数据存储: IndexedDB
 
-**问题**: 并发请求同时写入 storage 会导致数据覆盖
+**问题**: 需要高效、可靠的数据存储方案
 
-**方案**:
-
-1. 使用内存 Map 存储 IP 数据(同步操作,无竞态)
-2. 每个 tab 使用独立的 storage key
+**方案**: 使用 IndexedDB 存储 IP 缓存和性能数据
 
 ```javascript
-// 内存缓存 - 同步修改,无竞态
-const ipCacheMemory = new Map();
+// IndexedDB 存储管理器
+const storageManager = new PageLoadStorageManager();
+await storageManager.init();
 
-// 独立的 storage key
-const cacheKey = 'cache_tab' + tabId;
-const ipCacheKey = 'ipCache_tab' + tabId;
+// 保存 IP 数据
+await storageManager.saveIPData(url, ip, tabId);
+
+// 保存性能数据
+await storageManager.savePerformanceData(tabId, timing);
 ```
 
 **优势**:
 
-- ✅ 内存操作是原子的
-- ✅ 独立 key 避免相互覆盖
-- ✅ 性能提升 10-30 倍
+- ✅ 大容量 (50+ MB)
+- ✅ O(1) 索引查询
+- ✅ 自动清理过期数据
+- ✅ 跨上下文共享数据
 
 ### 3. 生命周期管理
 
@@ -83,22 +83,19 @@ const ipCacheKey = 'ipCache_tab' + tabId;
 用户导航
     ↓
 webNavigation.onBeforeNavigate
-    ├─ 创建内存缓存对象
     └─ 启动 webRequest 监听器
     ↓
 webRequest.onCompleted (并发)
-    └─ 同步写入内存缓存
+    └─ 保存到 IndexedDB
     ↓
 performance.js 调用 getIPData
-    ├─ 批量保存到 storage
-    └─ 返回内存数据
+    └─ 从 IndexedDB 读取数据
     ↓
 performance.js 调用 stopListening
     └─ 移除监听器
     ↓
 tabs.onRemoved
-    ├─ 清理内存缓存
-    └─ 清理 storage
+    └─ 清理 IndexedDB 数据
 ```
 
 ### 4. 消息处理
@@ -129,11 +126,11 @@ browser.runtime.onMessage.addListener((request, sender) => {
 ```
 webRequest.onCompleted
     ↓
-写入内存: ipCacheMemory.get(tabKey)[url] = {ip, timestamp}
+保存到 IndexedDB: storageManager.saveIPData(url, ip, tabId)
     ↓
 getIPData 请求
     ↓
-批量保存: storage.local.set({ipCache_tab123: {...}})
+从 IndexedDB 读取: storageManager.getIPDataByTab(tabId)
     ↓
 返回数据给 content script
 ```
@@ -147,7 +144,7 @@ performance.js (window.load)
     ↓
 发送消息: {timing: {...}, time: '1.23s'}
     ↓
-保存: storage.local.set({cache_tab123: {...}})
+保存到 IndexedDB: storageManager.savePerformanceData(tabId, timing)
     ↓
 更新 badge 和 popup
 ```
@@ -162,8 +159,8 @@ performance.js (window.load)
 
 ### 2. Storage 优化
 
-- 独立 key 避免竞态
-- 批量写入减少 I/O
+- IndexedDB 索引查询
+- 自动清理过期数据
 - Tab 关闭时自动清理
 
 ### 3. 监听器优化
@@ -190,28 +187,143 @@ performance.js (window.load)
 - 避免使用浏览器特定功能
 - 在回调中进行条件判断而非依赖过滤器
 
-## 存储结构
+## 存储架构
+
+### IndexedDB 实现
+
+使用 **IndexedDB** 作为主要存储方案：
+
+| 特性 | 实现 |
+|------|------|
+| **容量** | 50+ MB |
+| **查询** | O(1) 索引查询 |
+| **清理** | 自动清理过期数据 |
+| **稳定性** | 自动管理，避免溢出 |
+
+### 数据库架构
 
 ```javascript
-storage.local = {
-  // 性能数据
-  'cache_tab123': {
-    url: 'https://example.com',
-    loadTime: 1234,
-    resources: [...],
-    // ...
+// IndexedDB: PageLoadTimeDB (v1)
+{
+  ipCache: {
+    keyPath: 'url',
+    indexes: ['timestamp', 'tabId']
+    // 数据: { url, ip, tabId, timestamp }
   },
 
-  // IP 缓存
-  'ipCache_tab123': {
-    'https://example.com': {
-      ip: '1.2.3.4',
-      timestamp: 1234567890
-    },
-    'https://cdn.example.com/style.css': {
-      ip: '5.6.7.8',
-      timestamp: 1234567891
-    }
+  performanceData: {
+    keyPath: 'tabId',
+    indexes: ['timestamp']
+    // 数据: { tabId, timing, timestamp }
+  }
+}
+```
+
+### 跨上下文实现
+
+**关键设计**: 在不同上下文中按需创建实例
+
+```javascript
+// storage-manager.js - 只定义类
+class PageLoadStorageManager {
+  async init() {
+    // 自动检测上下文
+    const idb = typeof self !== 'undefined' && self.indexedDB ? self.indexedDB :
+                typeof window !== 'undefined' && window.indexedDB ? window.indexedDB :
+                indexedDB;
+    // ...
+  }
+}
+
+// background.js - Service Worker 上下文
+const storageManager = new PageLoadStorageManager();
+await storageManager.init();
+
+// popup.js - 页面上下文
+const storageManager = new PageLoadStorageManager();
+const storageManagerReady = storageManager.init();
+```
+
+**设计原因**:
+
+1. Service Worker 使用 `self.indexedDB`
+2. 页面使用 `window.indexedDB`
+3. 每个上下文独立管理实例生命周期
+4. 数据在不同上下文间共享（同一数据库）
+
+### 事务管理
+
+**错误示例**: 创建多个独立事务
+
+```javascript
+// ❌ 错误：第一个事务可能在第二个开始前完成
+const tx1 = db.transaction(['store1'], 'readonly');
+const data1 = await new Promise(...);
+const tx2 = db.transaction(['store2'], 'readonly');
+const data2 = await new Promise(...);
+```
+
+**正确示例**: 使用单个事务 + Promise.all
+
+```javascript
+// ✅ 正确：单个事务访问多个对象存储
+const tx = db.transaction(['store1', 'store2'], 'readonly');
+const store1 = tx.objectStore('store1');
+const store2 = tx.objectStore('store2');
+
+const [data1, data2] = await Promise.all([
+  new Promise((resolve, reject) => {
+    const req = store1.get(key1);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  }),
+  new Promise((resolve, reject) => {
+    const req = store2.get(key2);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  })
+]);
+```
+
+### 自动清理机制
+
+```javascript
+// background.js 中的定期清理
+setInterval(() => {
+  storageManager.cleanupOldData();
+}, 30 * 60 * 1000); // 每 30 分钟执行一次
+
+// storage-manager.js 中的实现
+async cleanupOldData(expiryTime = 3600000) {
+  // 自动删除 1 小时前的过期数据
+  // 防止数据无限增长
+}
+```
+
+### Firefox 特殊配置
+
+Firefox 需要在 manifest 中显式声明所有 background 脚本：
+
+```json
+// manifest.firefox.json
+{
+  "background": {
+    "scripts": [
+      "browser-polyfill.min.js",
+      "storage-manager.js",    // 必须显式添加
+      "background.js"
+    ]
+  }
+}
+```
+
+Chrome 使用 Service Worker，可以通过 `importScripts()` 动态加载：
+
+```json
+// manifest.chrome.json
+{
+  "background": {
+    "service_worker": "background.js"
   }
 }
 ```
@@ -233,9 +345,58 @@ storage.local = {
 }
 ```
 
+## 错误处理
+
+### 常见存储错误
+
+#### 1. 事务已完成错误
+
+```
+Failed to execute 'count' on 'IDBObjectStore': The transaction has finished.
+```
+
+**原因**: IndexedDB 事务在所有请求完成后自动提交，使用 `await` 会导致事务在等待期间完成
+
+**解决方案**: 使用单个事务 + `Promise.all()`（见上文"事务管理最佳实践"）
+
+#### 2. 上下文错误
+
+```
+ReferenceError: window is not defined
+```
+
+**原因**: Service Worker 中没有 `window` 对象
+
+**解决方案**: 自动检测上下文（见上文"跨上下文实现"）
+
+#### 3. 数据类型错误
+
+**原因**: 尝试序列化不可序列化的对象（函数、正则表达式等）
+
+**解决方案**: 在保存前自动清理数据
+
+```javascript
+// storage-manager.js 中的数据清理
+cleanDataForStorage(obj) {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj === 'function' || typeof obj === 'symbol') return undefined;
+  if (obj instanceof Date) return obj.toISOString();
+  if (obj instanceof RegExp) return obj.source;
+  if (Array.isArray(obj)) return obj.map(item => this.cleanDataForStorage(item));
+
+  const cleaned = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const cleanedValue = this.cleanDataForStorage(value);
+    if (cleanedValue !== undefined) cleaned[key] = cleanedValue;
+  }
+  return cleaned;
+}
+```
+
 ## 安全考虑
 
 1. **权限最小化**: 只请求必要的权限
 2. **数据隔离**: 每个 tab 的数据独立存储
-3. **自动清理**: Tab 关闭时清理所有相关数据
+3. **自动清理**: Tab 关闭时清理所有相关数据，定期清理过期数据
 4. **无外部通信**: 所有数据本地处理,不上传到服务器
+5. **隐私保护**: 隐私浏览模式下数据仅在内存中存储

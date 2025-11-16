@@ -9,6 +9,29 @@ var filterState = {
   types: ['all'] // 'all' 或具体的资源类型数组
 };
 
+// 在页面上下文中创建并初始化 PageLoadStorageManager
+var storageManager = null;
+var storageManagerReady = null;
+
+if (typeof PageLoadStorageManager !== 'undefined') {
+  console.log('[POPUP] 🔧 创建 PageLoadStorageManager 实例');
+  storageManager = new PageLoadStorageManager();
+
+  console.log('[POPUP] 📍 storageManager 实例:', storageManager);
+  console.log('[POPUP] 📍 初始 db 状态:', storageManager.db);
+
+  storageManagerReady = storageManager.init().then(() => {
+    console.log('[POPUP] ✅ StorageManager 初始化完成');
+    console.log('[POPUP] 📍 初始化后 db 状态:', storageManager.db);
+    return storageManager;
+  }).catch(error => {
+    console.error('[POPUP] ❌ StorageManager 初始化失败:', error);
+    throw error;
+  });
+} else {
+  console.error('[POPUP] ❌ PageLoadStorageManager 类不存在！');
+}
+
 function set(id, start, end, noacc) {
   var length = Math.round(end - start);
   // 动态获取容器宽度
@@ -402,58 +425,74 @@ function init() {
 
   browser.tabs.query({ active: true, currentWindow: true }).then(tabs => {
     var tab = tabs[0];
-    const cacheKey = 'cache_tab' + tab.id;
-    browser.storage.local.get(cacheKey).then(data => {
-      if (!data[cacheKey]) {
-        document.getElementById('container').innerHTML = '<p>No timing data available for this page.</p>';
-        return;
-      }
 
-      var t = data[cacheKey];
-      currentTiming = t;
-      total = t.duration;
+    // 从 IndexedDB 获取性能数据
+    if (storageManagerReady) {
+      // 使用共享的初始化 Promise
+      storageManagerReady.then(() => {
+        console.log('[POPUP] 📊 正在获取 Tab', tab.id, '的性能数据');
+        return storageManager.getPerformanceData(tab.id);
+      }).then(result => {
+        console.log('[POPUP] 📥 获取到的数据:', result);
+        if (!result || !result.timing) {
+          console.info('[POPUP] ⚠️ 没有找到性能数据');
+          document.getElementById('container').innerHTML = '<p>No timing data available for this page.</p>';
+          return;
+        }
+        console.log('[POPUP] ✅ 性能数据加载成功');
 
-      // https://dvcs.w3.org/hg/webperf/raw-file/tip/specs/NavigationTiming/Overview.html#processing-model
-      set('redirect', t.redirectStart, t.redirectEnd);
-      set('dns', t.domainLookupStart, t.domainLookupEnd);
-      set('connect', t.connectStart, t.connectEnd);
-      set('request', t.requestStart, t.responseStart);
-      set('response', t.responseStart, t.responseEnd);
-      set('dom', t.responseEnd, t.domComplete);
-      set('domParse', t.responseEnd, t.domInteractive);
-      set('domScripts', t.domInteractive, t.domContentLoadedEventStart);
-      set('contentLoaded', t.domContentLoadedEventStart, t.domContentLoadedEventEnd);
-      set('domSubRes', t.domContentLoadedEventEnd, t.domComplete);
-      set('load', t.loadEventStart, t.loadEventEnd);
-      document.getElementById("total").innerHTML = Math.round(t.duration);
+        var t = result.timing;
+        currentTiming = t;
+        total = t.duration;
 
-      // 显示主文档的 Remote IP
-      if (t.remoteIPAddress) {
-        document.getElementById("remoteIP").innerHTML = t.remoteIPAddress;
-      } else {
-        document.getElementById("remoteIP").innerHTML = 'unknown';
-      }
+        // https://dvcs.w3.org/hg/webperf/raw-file/tip/specs/NavigationTiming/Overview.html#processing-model
+        set('redirect', t.redirectStart, t.redirectEnd);
+        set('dns', t.domainLookupStart, t.domainLookupEnd);
+        set('connect', t.connectStart, t.connectEnd);
+        set('request', t.requestStart, t.responseStart);
+        set('response', t.responseStart, t.responseEnd);
+        set('dom', t.responseEnd, t.domComplete);
+        set('domParse', t.responseEnd, t.domInteractive);
+        set('domScripts', t.domInteractive, t.domContentLoadedEventStart);
+        set('contentLoaded', t.domContentLoadedEventStart, t.domContentLoadedEventEnd);
+        set('domSubRes', t.domContentLoadedEventEnd, t.domComplete);
+        set('load', t.loadEventStart, t.loadEventEnd);
+        document.getElementById("total").innerHTML = Math.round(t.duration);
 
-      // 使用 startTimestamp 显示页面加载开始时间,格式化为本地时区
-      const startTime = new Date(t.startTimestamp);
-      const formattedTime = startTime.toLocaleString(undefined, {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short'
+        // 显示主文档的 Remote IP
+        if (t.remoteIPAddress) {
+          document.getElementById("remoteIP").innerHTML = t.remoteIPAddress;
+        } else {
+          document.getElementById("remoteIP").innerHTML = 'unknown';
+        }
+
+        // 使用 startTimestamp 显示页面加载开始时间,格式化为本地时区
+        const startTime = new Date(t.startTimestamp);
+        const formattedTime = startTime.toLocaleString(undefined, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short'
+        });
+        document.getElementById("requestStart").innerHTML = formattedTime;
+
+        // 显示资源列表
+        if (t.resources && t.resources.length > 0) {
+          // 初始化类型筛选器
+          initTypeFilter(t.resources);
+          displayResources(t.resources);
+        }
+      }).catch(error => {
+        console.error('[POPUP] ❌ 获取性能数据失败:', error);
+        document.getElementById('container').innerHTML = '<p>Error loading timing data.</p>';
       });
-      document.getElementById("requestStart").innerHTML = formattedTime;
-
-      // 显示资源列表
-      if (t.resources && t.resources.length > 0) {
-        // 初始化类型筛选器
-        initTypeFilter(t.resources);
-        displayResources(t.resources);
-      }
-    });
+    } else {
+      console.error('[POPUP] ❌ storageManagerReady 不存在');
+      document.getElementById('container').innerHTML = '<p>Storage manager not initialized.</p>';
+    }
   });
   // 绑定导出按钮事件
   const exportButton = document.getElementById('export-button');
@@ -675,5 +714,5 @@ function init() {
   }
 }
 
-// 页面加载完成后初始化
+// 页面加载完成后初始化 UI
 document.addEventListener('DOMContentLoaded', init);
