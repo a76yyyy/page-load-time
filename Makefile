@@ -18,3 +18,16 @@ build_chrome: link_manifest_chrome
 	cd src && zip -r ../build/${NAME}-$(VERSION)_chrome.zip * && cd ..
 
 build: build_firefox build_chrome
+
+extract_chrome:
+	mkdir -p build/chrome
+	unzip -o build/${NAME}-$(VERSION)_chrome.zip -d build/chrome
+
+extract_firefox:
+	mkdir -p build/firefox
+	unzip -o build/${NAME}-$(VERSION)_firefox.zip -d build/firefox
+
+extract: extract_chrome extract_firefox
+
+clean:
+	rm -rf build
