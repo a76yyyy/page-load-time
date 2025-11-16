@@ -18,9 +18,9 @@
     let ipCache = {};
     try {
       ipCache = await browser.runtime.sendMessage({ action: 'getIPData' });
-      console.log('[DEBUG] 📥 收到 IP 缓存:', Object.keys(ipCache).length, '条记录', ipCache);
+      console.debug('[Performance] 📥 收到 IP 缓存:', Object.keys(ipCache).length, '条记录', ipCache);
     } catch (e) {
-      console.log('Failed to get IP cache:', e);
+      console.warn('[Performance] ⚠️ 获取 IP 缓存失败:', e);
     }
 
     // 为主文档设置 IP 地址
@@ -56,7 +56,7 @@
     try {
       await browser.runtime.sendMessage({ action: 'stopListening' });
     } catch (e) {
-      console.log('Failed to stop listening:', e);
+      console.warn('[Performance] ⚠️ 停止监听失败:', e);
     }
 
     // 设置开始时间
@@ -97,7 +97,7 @@
       }
       var time = duration.toFixed(precision).substring(0, isFF ? 3 : 4);
       var promise = browser.runtime.sendMessage({ time: time, timing: timing });
-      promise.catch((reason) => console.log(reason));
+      promise.catch((reason) => console.error('[Performance] ❌ 发送消息失败:', reason));
     } else {
       setTimeout(startCollect, 100);
     }

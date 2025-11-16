@@ -14,22 +14,22 @@ var storageManager = null;
 var storageManagerReady = null;
 
 if (typeof PageLoadStorageManager !== 'undefined') {
-  console.log('[POPUP] 🔧 创建 PageLoadStorageManager 实例');
+  console.debug('[Popup] 🔧 创建 PageLoadStorageManager 实例');
   storageManager = new PageLoadStorageManager();
 
-  console.log('[POPUP] 📍 storageManager 实例:', storageManager);
-  console.log('[POPUP] 📍 初始 db 状态:', storageManager.db);
+  console.debug('[Popup] 📍 storageManager 实例:', storageManager);
+  console.debug('[Popup] 📍 初始 db 状态:', storageManager.db);
 
   storageManagerReady = storageManager.init().then(() => {
-    console.log('[POPUP] ✅ StorageManager 初始化完成');
-    console.log('[POPUP] 📍 初始化后 db 状态:', storageManager.db);
+    console.info('[Popup] ✅ StorageManager 初始化完成');
+    console.debug('[Popup] 📍 初始化后 db 状态:', storageManager.db);
     return storageManager;
   }).catch(error => {
-    console.error('[POPUP] ❌ StorageManager 初始化失败:', error);
+    console.error('[Popup] ❌ StorageManager 初始化失败:', error);
     throw error;
   });
 } else {
-  console.error('[POPUP] ❌ PageLoadStorageManager 类不存在！');
+  console.error('[Popup] ❌ PageLoadStorageManager 类不存在！');
 }
 
 function set(id, start, end, noacc) {
@@ -398,7 +398,7 @@ function exportData() {
     const urlObj = new URL(currentTiming.name);
     domain = urlObj.hostname.replace(/\./g, '_'); // 将点替换为下划线,避免文件名问题
   } catch (e) {
-    console.error('Failed to parse URL:', e);
+    console.error('[Popup] ❌ URL 解析失败:', e);
   }
 
   const data = {
@@ -430,16 +430,16 @@ function init() {
     if (storageManagerReady) {
       // 使用共享的初始化 Promise
       storageManagerReady.then(() => {
-        console.log('[POPUP] 📊 正在获取 Tab', tab.id, '的性能数据');
+        console.debug('[Popup] 📊 正在获取 Tab', tab.id, '的性能数据');
         return storageManager.getPerformanceData(tab.id);
       }).then(result => {
-        console.log('[POPUP] 📥 获取到的数据:', result);
+        console.debug('[Popup] 📥 获取到的数据:', result);
         if (!result || !result.timing) {
-          console.info('[POPUP] ⚠️ 没有找到性能数据');
+          console.info('[Popup] ⚠️ 没有找到性能数据');
           document.getElementById('container').innerHTML = '<p>No timing data available for this page.</p>';
           return;
         }
-        console.log('[POPUP] ✅ 性能数据加载成功');
+        console.info('[Popup] ✅ 性能数据加载成功');
 
         var t = result.timing;
         currentTiming = t;
@@ -486,11 +486,11 @@ function init() {
           displayResources(t.resources);
         }
       }).catch(error => {
-        console.error('[POPUP] ❌ 获取性能数据失败:', error);
+        console.error('[Popup] ❌ 获取性能数据失败:', error);
         document.getElementById('container').innerHTML = '<p>Error loading timing data.</p>';
       });
     } else {
-      console.error('[POPUP] ❌ storageManagerReady 不存在');
+      console.error('[Popup] ❌ storageManagerReady 不存在');
       document.getElementById('container').innerHTML = '<p>Storage manager not initialized.</p>';
     }
   });

@@ -393,6 +393,75 @@ cleanDataForStorage(obj) {
 }
 ```
 
+## 日志系统
+
+### 日志级别设计
+
+项目使用标准的四级日志系统:
+
+| 级别 | 用途 | 示例场景 |
+|------|------|----------|
+| `debug` | 详细的调试信息 | 数据收集、内部状态、验证信息 |
+| `info` | 重要的业务流程事件 | 初始化完成、开始/停止监听、数据保存成功 |
+| `warn` | 警告信息,不影响主功能 | 获取缓存失败、存储未就绪 |
+| `error` | 错误信息,功能异常 | 初始化失败、保存失败、类不存在 |
+
+### 日志格式规范
+
+**统一格式**: `[模块名] 图标 描述`
+
+**模块标识**:
+
+- `[Background]` - Background Script (Service Worker)
+- `[Performance]` - Content Script (页面注入)
+- `[Popup]` - Popup UI (弹出窗口)
+- `[StorageManager]` - IndexedDB 存储管理器
+
+**图标约定**:
+
+- 🔧 初始化/检查 (debug)
+- 📍 内部状态 (debug)
+- 📥📤 数据收集/返回 (debug)
+- 💾 数据保存 (debug)
+- 🚀🛑 开始/停止监听 (info)
+- 🧭 导航开始 (info)
+- 🔄📦 升级/创建 (info)
+- 🧹🗑️ 清理数据 (info/debug)
+- ✅ 操作成功 (debug/info)
+- ⚠️ 警告 (warn)
+- ❌ 错误 (error)
+
+### 日志示例
+
+```javascript
+// Background Script
+console.info('[Background] 🚀 开始监听 Tab 123');
+console.debug('[Background] 📡 收集 IP: 1.2.3.4 for https://example.com/');
+console.warn('[Background] ⚠️ 存储管理器未就绪');
+console.error('[Background] ❌ 保存 IP 数据失败:', error);
+
+// Storage Manager
+console.info('[StorageManager] 🔧 开始打开数据库: PageLoadTimeDB v1');
+console.debug('[StorageManager] 💾 IP 数据已保存: https://example.com/ → 1.2.3.4');
+console.info('[StorageManager] 🧹 清理过期数据: 删除 15 条记录');
+
+// Performance Script
+console.debug('[Performance] 📥 收到 IP 缓存: 5 条记录');
+console.warn('[Performance] ⚠️ 获取 IP 缓存失败:', error);
+
+// Popup
+console.info('[Popup] ✅ StorageManager 初始化完成');
+console.error('[Popup] ❌ 获取性能数据失败:', error);
+```
+
+### 日志过滤
+
+在生产环境中,可以通过浏览器 DevTools 的日志级别过滤:
+
+- 开发: 显示所有级别 (debug/info/warn/error)
+- 生产: 只显示 info/warn/error
+- 排错: 只显示 warn/error
+
 ## 安全考虑
 
 1. **权限最小化**: 只请求必要的权限

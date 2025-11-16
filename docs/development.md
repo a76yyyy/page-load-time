@@ -219,32 +219,72 @@ diagnosePopupIndexedDB();
 
 ## 日志说明
 
-### 日志图标
+### 日志级别
 
-| 图标 | 含义 |
-|------|------|
-| 🧭 | 导航开始 |
-| 🚀 | 开始监听 |
-| 📡 | 收集 IP |
-| 🛑 | 停止监听 |
-| 💾 | 保存数据 |
-| 🗑️ | 清理缓存 |
-| ✅ | 操作成功 |
-| ❌ | 操作失败 |
+项目使用标准的日志级别:
+
+| 级别 | 用途 | 示例 |
+|------|------|------|
+| `console.debug` | 详细的调试信息 | 数据收集、内部状态 |
+| `console.info` | 重要的业务流程事件 | 初始化完成、开始/停止监听 |
+| `console.warn` | 警告信息,不影响功能 | 获取缓存失败、未就绪 |
+| `console.error` | 错误信息,功能异常 | 初始化失败、保存失败 |
+
+### 日志格式
+
+所有日志使用统一格式: `[模块名] 图标 描述`
+
+**模块名**:
+
+- `[Background]` - Background Script
+- `[Performance]` - Content Script
+- `[Popup]` - Popup UI
+- `[StorageManager]` - 存储管理器
+
+**常用图标**:
+
+| 图标 | 含义 | 级别 |
+|------|------|------|
+| 🔧 | 初始化/检查 | debug |
+| 📍 | 内部状态 | debug |
+| 📥/📤 | 数据收集/返回 | debug |
+| 💾 | 数据保存 | debug |
+| 🚀 | 开始监听 | info |
+| 🛑 | 停止监听 | info |
+| 🧭 | 导航开始 | info |
+| 📡 | 收集 IP | debug |
+| 🗑️ | 清理数据 | info/debug |
+| 🔄 | 升级/更新 | info |
+| 📦 | 创建对象 | info |
+| 🧹 | 清理过期数据 | info |
+| ✅ | 操作成功 | debug/info |
+| ⚠️ | 警告 | warn |
+| ❌ | 错误 | error |
 
 ### 正常流程日志
 
 ```
-[DEBUG] 🧭 导航开始: Tab 123 → https://example.com
-[DEBUG] 🚀 开始监听 Tab 123
-[DEBUG] ✅ 监听器已注册,当前监听 1 个标签页
-[DEBUG] 📡 收集 IP: 1.2.3.4 for https://example.com/
-[DEBUG] 📡 收集 IP: 5.6.7.8 for https://cdn.example.com/style.css
-[DEBUG] 💾 IP 数据已保存: https://example.com/ → 1.2.3.4
-[DEBUG] 📤 返回 Tab 123 的所有 IP 数据: 2 条记录
-[DEBUG] 🛑 停止监听 Tab 123
-[DEBUG] ✅ 监听器已移除,剩余 0 个标签页
+[Background] 🧭 导航开始: Tab 123 → https://example.com
+[Background] 🚀 开始监听 Tab 123
+[Background] ✅ 监听器已注册,当前监听 1 个标签页
+[Background] 📡 收集 IP: 1.2.3.4 for https://example.com/
+[Background] 📡 收集 IP: 5.6.7.8 for https://cdn.example.com/style.css
+[StorageManager] 💾 IP 数据已保存: https://example.com/ → 1.2.3.4
+[Background] 📤 返回 Tab 123 的所有 IP 数据: 2 条记录
+[Performance] 📥 收到 IP 缓存: 2 条记录
+[Background] 📊 收到性能数据: Tab 123, duration: 1234ms
+[Background] 💾 性能数据已保存到 IndexedDB: Tab 123
+[Background] 🛑 停止监听 Tab 123
+[Background] ✅ 监听器已移除,剩余 0 个标签页
 ```
+
+### 过滤日志
+
+在浏览器 DevTools 中可以按级别过滤:
+
+- **开发调试**: 显示所有级别 (默认)
+- **生产环境**: 只显示 info/warn/error (隐藏 debug)
+- **错误排查**: 只显示 warn/error
 
 ## 常见问题
 
@@ -423,6 +463,17 @@ console.timeEnd('renderPopup');
 - 使用 async/await,避免回调地狱
 - 添加详细的日志和注释
 
+### 日志规范
+
+- 使用统一的日志格式: `[模块名] 图标 描述`
+- 根据重要性选择合适的日志级别:
+  - `console.debug`: 详细的调试信息
+  - `console.info`: 重要的业务流程事件
+  - `console.warn`: 警告信息
+  - `console.error`: 错误信息
+- 所有日志使用中文描述
+- 使用表情图标增强可读性
+
 ### 命名规范
 
 - 函数: `camelCase` (例: `startListeningForTab`)
@@ -435,9 +486,9 @@ console.timeEnd('renderPopup');
 // ✅ 好的做法
 try {
   await storageManager.savePerformanceData(tabId, timing);
-  console.log('✅ 保存成功');
+  console.info('[Background] ✅ 保存成功');
 } catch (error) {
-  console.error('❌ 保存失败:', error);
+  console.error('[Background] ❌ 保存失败:', error);
 }
 
 // ❌ 避免

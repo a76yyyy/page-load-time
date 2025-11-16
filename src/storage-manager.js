@@ -23,7 +23,7 @@ class PageLoadStorageManager {
      */
     async init() {
         return new Promise((resolve, reject) => {
-            console.log('[PageLoadStorageManager] 🔧 开始打开数据库:', this.dbName, 'v' + this.version);
+            console.info('[StorageManager] 🔧 开始打开数据库:', this.dbName, 'v' + this.version);
 
             // 检查 IndexedDB 是否可用
             // 在 Service Worker 中使用 self.indexedDB，在页面中使用 window.indexedDB
@@ -33,7 +33,7 @@ class PageLoadStorageManager {
 
             if (!idb) {
                 const error = new Error('IndexedDB 不可用');
-                console.error('[PageLoadStorageManager] ❌', error.message);
+                console.error('[StorageManager] ❌', error.message);
                 reject(error);
                 return;
             }
@@ -41,36 +41,36 @@ class PageLoadStorageManager {
             const request = idb.open(this.dbName, this.version);
 
             request.onerror = () => {
-                console.error('[PageLoadStorageManager] ❌ IndexedDB 打开失败:', request.error);
+                console.error('[StorageManager] ❌ IndexedDB 打开失败:', request.error);
                 reject(request.error);
             };
 
             request.onsuccess = () => {
                 this.db = request.result;
-                console.log('[PageLoadStorageManager] ✅ IndexedDB 初始化成功');
-                console.log('[PageLoadStorageManager] 📍 this.db 已设置:', this.db);
-                console.log('[PageLoadStorageManager] 📍 数据库名称:', this.db.name);
-                console.log('[PageLoadStorageManager] 📍 对象存储:', Array.from(this.db.objectStoreNames));
+                console.info('[StorageManager] ✅ IndexedDB 初始化成功');
+                console.debug('[StorageManager] 📍 this.db 已设置:', this.db);
+                console.debug('[StorageManager] 📍 数据库名称:', this.db.name);
+                console.debug('[StorageManager] 📍 对象存储:', Array.from(this.db.objectStoreNames));
                 resolve(this.db);
             };
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                console.log('[DEBUG] 🔄 IndexedDB 升级中...');
+                console.info('[StorageManager] 🔄 IndexedDB 升级中...');
 
                 // 创建 IP 缓存存储
                 if (!db.objectStoreNames.contains(this.stores.ipCache)) {
                     const ipStore = db.createObjectStore(this.stores.ipCache, { keyPath: 'url' });
                     ipStore.createIndex('timestamp', 'timestamp', { unique: false });
                     ipStore.createIndex('tabId', 'tabId', { unique: false });
-                    console.log('[DEBUG] 📦 创建 ipCache 对象存储');
+                    console.info('[StorageManager] 📦 创建 ipCache 对象存储');
                 }
 
                 // 创建性能数据存储
                 if (!db.objectStoreNames.contains(this.stores.performanceData)) {
                     const perfStore = db.createObjectStore(this.stores.performanceData, { keyPath: 'tabId' });
                     perfStore.createIndex('timestamp', 'timestamp', { unique: false });
-                    console.log('[DEBUG] 📦 创建 performanceData 对象存储');
+                    console.info('[StorageManager] 📦 创建 performanceData 对象存储');
                 }
             };
         });
@@ -84,7 +84,7 @@ class PageLoadStorageManager {
      */
     async saveIPData(url, ip, tabId) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return false;
         }
 
@@ -102,16 +102,16 @@ class PageLoadStorageManager {
             return new Promise((resolve, reject) => {
                 const request = store.put(data);
                 request.onerror = () => {
-                    console.error('[DEBUG] ❌ 保存 IP 数据失败:', request.error);
+                    console.error('[StorageManager] ❌ 保存 IP 数据失败:', request.error);
                     reject(request.error);
                 };
                 request.onsuccess = () => {
-                    console.log(`[DEBUG] 💾 IP 数据已保存: ${url} → ${ip}`);
+                    console.debug(`[StorageManager] 💾 IP 数据已保存: ${url} → ${ip}`);
                     resolve(true);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 保存 IP 数据异常:', error?.message || String(error), error?.stack);
+            console.error('[StorageManager] ❌ 保存 IP 数据异常:', error?.message || String(error), error?.stack);
             return false;
         }
     }
@@ -122,7 +122,7 @@ class PageLoadStorageManager {
      */
     async getIPData(url) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return null;
         }
 
@@ -136,13 +136,13 @@ class PageLoadStorageManager {
                 request.onsuccess = () => {
                     const result = request.result;
                     if (result) {
-                        console.log(`[DEBUG] 📥 获取 IP 数据: ${url} → ${result.ip}`);
+                        console.debug(`[StorageManager] 📥 获取 IP 数据: ${url} → ${result.ip}`);
                     }
                     resolve(result || null);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 获取 IP 数据失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 获取 IP 数据失败:', error?.message || String(error));
             return null;
         }
     }
@@ -153,7 +153,7 @@ class PageLoadStorageManager {
      */
     async getIPDataByTab(tabId) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return {};
         }
 
@@ -174,12 +174,12 @@ class PageLoadStorageManager {
                             timestamp: item.timestamp
                         };
                     });
-                    console.log(`[DEBUG] 📥 获取 Tab ${tabId} 的 IP 数据: ${results.length} 条记录`);
+                    console.debug(`[StorageManager] 📥 获取 Tab ${tabId} 的 IP 数据: ${results.length} 条记录`);
                     resolve(ipCache);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 获取 Tab IP 数据失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 获取 Tab IP 数据失败:', error?.message || String(error));
             return {};
         }
     }
@@ -191,7 +191,7 @@ class PageLoadStorageManager {
      */
     async savePerformanceData(tabId, timing) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return false;
         }
 
@@ -211,16 +211,16 @@ class PageLoadStorageManager {
             return new Promise((resolve, reject) => {
                 const request = store.put(data);
                 request.onerror = () => {
-                    console.error('[DEBUG] ❌ 保存性能数据失败:', request.error);
+                    console.error('[StorageManager] ❌ 保存性能数据失败:', request.error);
                     reject(request.error);
                 };
                 request.onsuccess = () => {
-                    console.log(`[DEBUG] 💾 性能数据已保存: Tab ${tabId}`);
+                    console.debug(`[StorageManager] 💾 性能数据已保存: Tab ${tabId}`);
                     resolve(true);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 保存性能数据异常:', error?.message || String(error), error?.stack);
+            console.error('[StorageManager] ❌ 保存性能数据异常:', error?.message || String(error), error?.stack);
             return false;
         }
     }
@@ -231,7 +231,7 @@ class PageLoadStorageManager {
      */
     async getPerformanceData(tabId) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return null;
         }
 
@@ -245,13 +245,13 @@ class PageLoadStorageManager {
                 request.onsuccess = () => {
                     const result = request.result;
                     if (result) {
-                        console.log(`[DEBUG] 📥 获取性能数据: Tab ${tabId}`);
+                        console.debug(`[StorageManager] 📥 获取性能数据: Tab ${tabId}`);
                     }
                     resolve(result || null);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 获取性能数据失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 获取性能数据失败:', error?.message || String(error));
             return null;
         }
     }
@@ -262,7 +262,7 @@ class PageLoadStorageManager {
      */
     async deleteTabData(tabId) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return false;
         }
 
@@ -294,12 +294,12 @@ class PageLoadStorageManager {
                 const request = perfStore.delete(tabId);
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
-                    console.log(`[DEBUG] 🗑️ Tab ${tabId} 的数据已删除`);
+                    console.debug(`[StorageManager] 🗑️ Tab ${tabId} 的数据已删除`);
                     resolve(true);
                 };
             });
         } catch (error) {
-            console.error('[DEBUG] ❌ 删除 Tab 数据失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 删除 Tab 数据失败:', error?.message || String(error));
             return false;
         }
     }
@@ -310,7 +310,7 @@ class PageLoadStorageManager {
      */
     async cleanupOldData(expiryTime = this.config.CACHE_EXPIRY_TIME) {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return 0;
         }
 
@@ -360,10 +360,10 @@ class PageLoadStorageManager {
                 };
             });
 
-            console.log(`[DEBUG] 🧹 清理过期数据: 删除 ${deletedCount} 条记录`);
+            console.info(`[StorageManager] 🧹 清理过期数据: 删除 ${deletedCount} 条记录`);
             return deletedCount;
         } catch (error) {
-            console.error('[DEBUG] ❌ 清理过期数据失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 清理过期数据失败:', error?.message || String(error));
             return 0;
         }
     }
@@ -373,7 +373,7 @@ class PageLoadStorageManager {
      */
     async getStats() {
         if (!this.db) {
-            console.warn('[DEBUG] ⚠️ 数据库未初始化');
+            console.warn('[StorageManager] ⚠️ 数据库未初始化');
             return null;
         }
 
@@ -405,10 +405,10 @@ class PageLoadStorageManager {
                 totalRecords: ipCount + perfCount
             };
 
-            console.log('[DEBUG] 📊 数据库统计:', stats);
+            console.debug('[StorageManager] 📊 数据库统计:', stats);
             return stats;
         } catch (error) {
-            console.error('[DEBUG] ❌ 获取统计信息失败:', error?.message || String(error));
+            console.error('[StorageManager] ❌ 获取统计信息失败:', error?.message || String(error));
             return null;
         }
     }
@@ -459,7 +459,7 @@ class PageLoadStorageManager {
     close() {
         if (this.db) {
             this.db.close();
-            console.log('[DEBUG] ✅ 数据库连接已关闭');
+            console.info('[StorageManager] ✅ 数据库连接已关闭');
         }
     }
 }
