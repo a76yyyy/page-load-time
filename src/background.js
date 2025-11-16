@@ -168,10 +168,37 @@ browser.tabs.onRemoved.addListener(tabId => {
   }
 });
 
+// 检查 URL 是否应该被监听
+function shouldMonitorUrl(url) {
+  // 过滤掉特殊协议的页面
+  const ignoredProtocols = [
+    'about:',
+    'chrome:',
+    'chrome-extension:',
+    'moz-extension:',
+    'edge:',
+    'opera:',
+    'vivaldi:',
+    'brave:',
+    'file:',
+    'data:',
+    'javascript:',
+    'view-source:'
+  ];
+
+  return !ignoredProtocols.some(protocol => url.startsWith(protocol));
+}
+
 // 监听导航事件 - 在任何网络请求之前触发
 browser.webNavigation.onBeforeNavigate.addListener((details) => {
   // 只处理主框架的导航,忽略 iframe
   if (details.frameId !== 0) {
+    return;
+  }
+
+  // 过滤掉特殊协议的页面
+  if (!shouldMonitorUrl(details.url)) {
+    console.debug(`[Background] ⏭️ 跳过特殊页面: ${details.url}`);
     return;
   }
 
