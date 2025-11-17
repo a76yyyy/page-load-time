@@ -33,13 +33,13 @@ if (typeof PageLoadStorageManager !== 'undefined') {
 }
 
 function set(id, start, end, noacc) {
-  var length = Math.round(end - start);
+  var length = end - start;
   // 动态获取容器宽度
   var containerWidth = document.getElementById('container').offsetWidth;
   var x = Math.round(start / total * containerWidth);
-  document.getElementById(id + 'When').innerHTML = Math.round(start);
-  document.getElementById(id).innerHTML = length;
-  document.getElementById(id + 'Total').innerHTML = noacc ? '-' : Math.round(end);
+  document.getElementById(id + 'When').innerHTML = start.toFixed(2);
+  document.getElementById(id).innerHTML = length.toFixed(2);
+  document.getElementById(id + 'Total').innerHTML = noacc ? '-' : end.toFixed(2);
   document.getElementById('r-' + id).style.cssText =
     'background-size:' + Math.round(length / total * containerWidth) + 'px 100%;' +
     'background-position-x:' + (x >= containerWidth ? containerWidth - 1 : x) + 'px;';
@@ -218,7 +218,7 @@ function createResourceElement(resource, timeRange, resourceTotalTime, container
 
   const fileName = resource.name.split('/').pop() || resource.name;
   const size = resource.transferSize > 0 ?
-    (resource.transferSize / 1024).toFixed(1) + ' KB' : 'cached';
+    (resource.transferSize / 1024).toFixed(2) + ' KB' : 'cached';
 
   // 计算背景色位置和大小
   const relativeStart = resource.startTime - timeRange.min;
@@ -230,7 +230,7 @@ function createResourceElement(resource, timeRange, resourceTotalTime, container
     <div class="resource-main">
       <span class="resource-name" title="${resource.name}">${fileName}</span>
       <span class="resource-type">${resource.initiatorType || 'unknown'}</span>
-      <span class="resource-duration">${Math.round(resource.duration)}ms</span>
+      <span class="resource-duration">${resource.duration.toFixed(2)}ms</span>
       <span class="resource-size">${size}</span>
     </div>
     <div class="resource-details" style="display: none;">
@@ -244,11 +244,11 @@ function createResourceElement(resource, timeRange, resourceTotalTime, container
       </div>
       <div class="detail-row">
         <span class="label">Duration:</span>
-        <span class="value">${Math.round(resource.duration)}ms</span>
+        <span class="value">${resource.duration.toFixed(2)}ms</span>
       </div>
       <div class="detail-row">
         <span class="label">Start Time:</span>
-        <span class="value">${Math.round(resource.startTime)}ms</span>
+        <span class="value">${resource.startTime.toFixed(2)}ms</span>
       </div>
       <div class="detail-row">
         <span class="label">Transfer Size:</span>
@@ -457,7 +457,7 @@ function init() {
         set('contentLoaded', t.domContentLoadedEventStart, t.domContentLoadedEventEnd);
         set('domSubRes', t.domContentLoadedEventEnd, t.domComplete);
         set('load', t.loadEventStart, t.loadEventEnd);
-        document.getElementById("total").innerHTML = Math.round(t.duration);
+        document.getElementById("total").innerHTML = t.duration.toFixed(2);
 
         // 显示主文档的 Remote IP
         if (t.remoteIPAddress) {
