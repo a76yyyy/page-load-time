@@ -1,0 +1,58 @@
+appName: Page Load Time
+appDescription: A powerful browser extension for measuring and analyzing web page load performance
+navigation:
+  title: Navigation Timing
+  loadTimings: Load timings (ms)
+  event: Event
+  start: Start
+  duration: Duration
+  end: End
+  redirect: Redirect
+  dns: DNS
+  connect: Connect
+  request: Request
+  response: Response
+  dom: DOM
+  parse: Parse
+  executeScripts: Execute Scripts
+  contentLoaded: Content loaded
+  subResources: Sub Resources
+  loadEvent: Load event
+  total: Total
+  remoteIP: Remote IP
+  timingsBasedOn: Timings are based on
+  dnsLookup: DNS Lookup
+  tcpConnection: TCP Connection
+  tlsHandshake: TLS Handshake
+  ttfb: Time to First Byte
+  contentDownload: Content Download
+  domParse: DOM Parse
+  domContentLoaded: DOM Content Loaded
+  totalLoad: Total Load Time
+  serverIP: Server IP
+
+resources:
+  title: Resources
+  resourceTimings: Resource Timings
+  resource: Resource
+  name: Name
+  type: Type
+  duration: Duration
+  size: Size
+  noData: No resources data
+  url: URL
+  startTime: Start Time
+  transferSize: Transfer Size
+  encodedSize: Encoded Size
+  decodedSize: Decoded Size
+  protocol: Protocol
+  status: Status
+  remoteIP: Remote IP
+
+actions:
+  export: Export Data
+  refresh: Refresh
+
+common:
+  noData: No timing data available for this page
+  cached: cached

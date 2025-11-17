@@ -1,160 +1,221 @@
 # Page Load Time
 
-[English](#page-load-time) | [中文](README_ZH.md)
+[中文](README_ZH.md) | English
 
-A powerful browser extension for measuring and analyzing web page load performance. Supports modern browsers including Chrome, Firefox, and Edge.
+A powerful browser extension for measuring and analyzing web page load performance. Supports Chrome, Firefox, and Edge.
 
-## Features
+## 🚀 Features
 
-- 📊 **Navigation Timing Analysis**: Detailed breakdown of page load timings using PerformanceNavigationTiming API
+- 📊 **Navigation Timing Analysis**: Detailed page load time breakdown using Performance Navigation Timing API
 - 🔍 **Resource Analysis**: View detailed performance metrics for all sub-resources
-- 📑 **Tabbed Interface**: Switch between navigation timing and resource analysis views
-- 🔗 **Clickable Resources**: Click on any resource to view detailed performance information in a new tab
 - 🌐 **IP Address Tracking**: Display server IP address for each resource
-- 🚀 **Modern API**: Uses the latest PerformanceNavigationTiming API (replacing deprecated PerformanceTiming)
-- 💾 **Local Storage**: Uses IndexedDB to store performance data with cross-browser context sharing
-- 🔄 **Auto Cleanup**: Automatically cleans up expired data to prevent storage overflow
+- 📈 **Visual Performance Metrics**: Interactive charts and tables
+- 💾 **Export Data**: Export performance data as JSON
+- 🌍 **Multi-language Support**: English & 中文
+- ⚡ **Performance Optimized**: DOM reuse optimization (10-13x faster)
+- 🔄 **Auto Cleanup**: Automatic cleanup of expired data
 
-## Project Status
+## 📦 Installation
 
-This extension has been updated with modern Web Performance APIs and enhanced features to provide a better performance analysis experience.
-
-## Installation
-
-### Install from App Store
+### From App Stores
 
 - **Firefox**: [Mozilla Add-ons](https://addons.mozilla.org/en-CA/firefox/addon/load-timer/)
 - **Chrome/Brave**: [Chrome Web Store](https://chrome.google.com/webstore/detail/page-load-time/fploionmjgeclbkemipmkogoaohcdbig/)
 - **Edge**: [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/page-load-time/llcdjocbfkdndmjbgpaibfkdjkjogeho)
 
-### Local Development Installation
+### Local Development
 
 #### Chrome/Edge
 
 1. Open `chrome://extensions/`
 2. Enable "Developer mode"
 3. Click "Load unpacked"
-4. Select the project's `src` directory
+4. Select `.output/chrome-mv3-dev` directory
 
 #### Firefox
 
 1. Open `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on"
-3. Select `src/manifest.firefox.json`
+3. Select `.output/firefox-mv2-dev/manifest.json`
 
-## Quick Start
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm (recommended)
+
+### Quick Start
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development (Chrome)
+pnpm dev
+
+# Start development (Firefox)
+pnpm dev:firefox
+
+# Start development (Edge)
+pnpm dev:edge
+
+# Build for production
+pnpm build
+
+# Create distribution ZIP
+pnpm zip
+
+# Type check
+pnpm compile
+```
+
+### Using Makefile
+
+```bash
+# View all available commands
+make help
+
+# Development
+make dev              # Chrome development mode
+make dev-firefox      # Firefox development mode
+make dev-edge         # Edge development mode
+
+# Build
+make build            # Chrome production build
+make build-firefox    # Firefox production build
+
+# Package
+make zip              # Chrome ZIP package
+make zip-firefox      # Firefox ZIP package
+
+# Extract
+make extract          # Extract all versions
+make extract_chrome   # Extract Chrome version
+make extract_firefox  # Extract Firefox version
+
+# Cleanup
+make clean            # Clean build artifacts
+make clean-all        # Clean everything including node_modules
+make reinstall        # Reinstall dependencies
+```
 
 ### Project Structure
 
 ```
 page-load-time/
-├── src/                          # Source code
-│   ├── background.js             # Background Script (Service Worker)
-│   ├── performance.js            # Content Script (page injection)
-│   ├── popup.html/js/css         # Popup UI
-│   ├── storage-manager.js        # IndexedDB storage manager
-│   ├── manifest.json             # Chrome manifest
-│   ├── manifest.firefox.json     # Firefox manifest
-│   └── fonts/                    # Font resources
-├── build/                        # Build output
-├── docs/                         # Documentation
-│   ├── architecture.md           # Architecture design
-│   └── development.md            # Development guide
-├── screenshots/                  # Screenshots
-└── README.md                     # This file
+├── src/
+│   ├── entrypoints/
+│   │   ├── background.ts       # Background service worker
+│   │   ├── content.ts          # Content script
+│   │   └── popup/              # Popup UI
+│   │       ├── main.ts
+│   │       ├── NavigationRenderer.ts
+│   │       ├── ResourcesRenderer.ts
+│   │       └── VirtualScroller.ts
+│   ├── services/
+│   │   └── storage.service.ts  # IndexedDB storage
+│   ├── utils/
+│   │   ├── types.ts
+│   │   ├── messaging.ts
+│   │   ├── guards.ts
+│   │   ├── formatters.ts
+│   │   └── calculators.ts
+│   ├── locales/                # i18n translations
+│   └── assets/                 # Icons and resources
+├── docs/                       # Documentation
+├── Makefile                    # Development commands
+└── package.json
 ```
 
-### Development
+## 🏗️ Tech Stack
 
-For detailed development guide, please refer to [docs/development.md](docs/development.md)
+- **Framework**: [WXT](https://wxt.dev/) - Next-gen web extension framework
+- **Language**: TypeScript
+- **Storage**: IndexedDB via [idb](https://github.com/jakearchibald/idb)
+- **Messaging**: [@webext-core/messaging](https://webext-core.aklinker1.io/)
+- **i18n**: [@wxt-dev/i18n](https://wxt.dev/i18n.html)
+- **UI**: Vanilla TypeScript (no framework overhead)
 
-Main topics include:
+## 🌐 Browser Support
 
-- Environment setup and extension loading
-- Debugging tips and common commands
-- Logging system documentation
-- Troubleshooting
-- Code standards and best practices
+- ✅ Chrome 88+
+- ✅ Edge 88+
+- ✅ Firefox 109+
+
+## 📋 How It Works
 
 ### Architecture
 
-For detailed architecture design, please refer to [docs/architecture.md](docs/architecture.md)
+1. **Background Script** (`background.ts`)
+   - Monitors navigation events via `webNavigation.onBeforeNavigate`
+   - Collects IP addresses via `webRequest.onCompleted`
+   - Manages tab lifecycle and listeners
+   - Stores data in IndexedDB with automatic cleanup
 
-Main topics include:
+2. **Content Script** (`content.ts`)
+   - Captures performance timing using Performance API
+   - Collects resource timing data
+   - Communicates with background script via type-safe messaging
+   - Associates IP addresses with resources
 
-- Core components overview
-- Key design decisions
-- Data flow and lifecycle
-- Performance optimization strategies
-- Cross-browser compatibility
+3. **Storage Service** (`storage.service.ts`)
+   - IndexedDB-based storage with automatic cleanup
+   - Type-safe proxy service interface
+   - Efficient indexed queries
 
-## Core Features
+4. **Popup UI** (`popup/`)
+   - Navigation timing visualization
+   - Resource list with sorting and filtering
+   - DOM reuse optimization for performance
+   - Virtual scrolling for large resource lists
 
-### Performance Metrics
+### Data Flow
 
-The extension collects the following performance metrics:
+```
+User navigates
+    ↓
+webNavigation.onBeforeNavigate
+    └─ Start webRequest listener
+    ↓
+webRequest.onCompleted (concurrent)
+    └─ Save IP to IndexedDB
+    ↓
+Content script collects performance data
+    ↓
+getIPData request
+    └─ Retrieve from IndexedDB
+    ↓
+savePerformanceData
+    └─ Store in IndexedDB
+    ↓
+Popup displays metrics
+```
 
-| Metric | Description |
-|--------|-------------|
-| DNS Lookup Time | Time spent on domain name resolution |
-| TCP Connection Time | Time spent establishing connection |
-| TLS Handshake Time | Time spent on HTTPS handshake |
-| Time to First Byte (TTFB) | Time to receive the first byte |
-| Content Download Time | Time spent downloading response body |
-| DOM Parse Time | Time spent parsing HTML |
-| Resource Load Time | Time spent loading all resources |
-| Total Load Time | Total time for page to fully load |
+## 📚 Documentation
 
-### Resource Analysis
+- **[Architecture](docs/architecture.md)** - System design, components, and optimization strategies
+- **[Development Guide](docs/development.md)** - Setup, debugging, testing, and best practices
+- **[Documentation Index](docs/README.md)** - Overview of all documentation
 
-For each resource, displays:
+## 🔒 Privacy & Security
 
-- Resource URL
-- Resource type (script, stylesheet, image, etc.)
-- Load time
-- Resource size
-- Server IP address
-- Detailed performance time breakdown
-
-## Technology Stack
-
-- **API**: WebExtensions API, Performance Navigation Timing API, Resource Timing API
-- **Storage**: IndexedDB
-- **Compatibility**: browser-polyfill.js
-- **Browsers**: Chrome, Firefox, Edge
-
-## Permissions
-
-The extension requests the following permissions:
-
-| Permission | Purpose |
-|------------|---------|
-| `webRequest` | Listen to network requests to collect IP addresses |
-| `webNavigation` | Listen to navigation events to start listeners |
-| `storage` | Store performance data and IP cache |
-| `tabs` | Access tab information |
-| `activeTab` | Access current tab |
-| `<all_urls>` | Access all websites |
-
-## Privacy and Security
-
-- ✅ **Local Processing**: All data is processed locally and never uploaded to any server
-- ✅ **Data Isolation**: Each tab's data is stored independently
-- ✅ **Auto Cleanup**: Automatically cleans up related data when tabs close, and periodically cleans up expired data
-- ✅ **Private Mode**: Data is stored only in memory in private browsing mode
+- ✅ **Local Processing**: All data processed locally, never uploaded
+- ✅ **Data Isolation**: Each tab's data stored independently
+- ✅ **Auto Cleanup**: Automatic cleanup on tab close and periodic cleanup
 - ✅ **Minimal Permissions**: Only requests necessary permissions
+- ✅ **No External Communication**: No external API calls
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
+MIT License - See [LICENSE.md](LICENSE.md)
 
-## Contributing
+## 🤝 Contributing
 
-Issues and Pull Requests are welcome!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Related Resources
+## 🙏 Acknowledgments
 
-- [Chrome Extension API Documentation](https://developer.chrome.com/docs/extensions/)
-- [MDN WebExtensions Documentation](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions)
-- [Navigation Timing API](https://developer.mozilla.org/en-US/docs/Web/API/Navigation_timing_API)
-- [Resource Timing API](https://developer.mozilla.org/en-US/docs/Web/API/Resource_Timing_API)
+- Built with [WXT](https://wxt.dev/)
+- Uses [webext-core](https://webext-core.aklinker1.io/) utilities
+- Inspired by browser DevTools Performance panel

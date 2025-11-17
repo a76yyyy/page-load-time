@@ -1,0 +1,52 @@
+import { defineWebExtConfig } from 'wxt';
+/**
+ * Web Extension 开发配置示例
+ *
+ * 复制此文件为 web-ext.config.ts 并根据你的环境修改
+ * 注意: web-ext.config.ts 已被添加到 .gitignore,不会被提交
+ */
+export default defineWebExtConfig({
+  // 配置浏览器二进制文件路径
+  binaries: {
+    // macOS Edge 路径
+    edge: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+
+    // macOS Chrome 路径
+    // chrome: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+
+    // macOS Chrome Canary 路径
+    // chrome: '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+
+    // Firefox Developer Edition
+    // firefox: 'firefoxdeveloperedition',
+
+    // Windows Edge 路径示例
+    // edge: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+
+    // Windows Chrome 路径示例
+    // chrome: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  },
+
+  // Chromium 启动参数 (适用于 Chrome 和 Edge)
+  chromiumArgs: [
+    '--auto-open-devtools-for-tabs', // 自动打开开发者工具
+    // '--disable-extensions-except=<path>', // 只加载指定扩展
+    // '--load-extension=<path>', // 加载额外的扩展
+  ],
+
+  // 持久化用户数据 (可选)
+  // 启用后,浏览器配置、登录状态等会在多次运行间保持
+  // keepProfileChanges: true,
+  // chromiumProfile: '.wxt/chrome-data',
+
+  // 禁用自动打开浏览器 (可选)
+  // 如果你想手动加载扩展,可以设置为 true
+  // disabled: false,
+
+  // Firefox 特定配置
+  // firefoxProfile: '.wxt/firefox-profile',
+  // keepProfileChanges: true,
+
+  // 启动 URL (可选)
+  // startUrl: 'https://example.com',
+});

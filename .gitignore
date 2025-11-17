@@ -4,3 +4,21 @@ src/manifest.json
 build
 *.pem
 .DS_Store
+
+# WXT
+.wxt
+.output
+web-ext.config.ts
+
+# Dependencies
+node_modules
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env.local
+.env.*.local
+backup/

@@ -1,0 +1,58 @@
+appName: 页面加载时间
+appDescription: 强大的浏览器扩展,用于测量和分析网页加载性能
+navigation:
+  title: 导航时序
+  loadTimings: 加载时序 (ms)
+  event: 事件
+  start: 开始
+  duration: 耗时
+  end: 结束
+  redirect: 重定向
+  dns: DNS
+  connect: 连接
+  request: 请求
+  response: 响应
+  dom: DOM
+  parse: 解析
+  executeScripts: 执行脚本
+  contentLoaded: 内容加载
+  subResources: 子资源
+  loadEvent: 加载事件
+  total: 总计
+  remoteIP: 远程 IP
+  timingsBasedOn: 时序基于
+  dnsLookup: DNS 查询
+  tcpConnection: TCP 连接
+  tlsHandshake: TLS 握手
+  ttfb: 首字节时间
+  contentDownload: 内容下载
+  domParse: DOM 解析
+  domContentLoaded: DOM 内容加载
+  totalLoad: 总加载时间
+  serverIP: 服务器 IP
+
+resources:
+  title: 资源列表
+  resourceTimings: 资源时序
+  resource: 资源
+  name: 名称
+  type: 类型
+  duration: 耗时
+  size: 大小
+  noData: 无资源数据
+  url: URL
+  startTime: 开始时间
+  transferSize: 传输大小
+  encodedSize: 编码大小
+  decodedSize: 解码大小
+  protocol: 协议
+  status: 状态
+  remoteIP: 远程 IP
+
+actions:
+  export: 导出数据
+  refresh: 刷新
+
+common:
+  noData: 此页面暂无性能数据
+  cached: 已缓存

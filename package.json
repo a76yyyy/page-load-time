@@ -1,0 +1,29 @@
+{
+    "name": "page-load-time",
+    "description": "A powerful browser extension for measuring and analyzing web page load performance",
+    "private": true,
+    "version": "4.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "wxt",
+        "dev:firefox": "wxt -b firefox",
+        "dev:edge": "wxt -b edge",
+        "build": "wxt build",
+        "build:firefox": "wxt build -b firefox",
+        "zip": "wxt zip",
+        "zip:firefox": "wxt zip -b firefox",
+        "compile": "tsc --noEmit",
+        "postinstall": "wxt prepare"
+    },
+    "dependencies": {
+        "@webext-core/messaging": "^2.3.0",
+        "@webext-core/proxy-service": "^1.2.1",
+        "idb": "^8.0.0"
+    },
+    "devDependencies": {
+        "@wxt-dev/auto-icons": "^1.1.0",
+        "@wxt-dev/i18n": "^0.2.4",
+        "typescript": "^5.7.2",
+        "wxt": "^0.20.11"
+    }
+}
